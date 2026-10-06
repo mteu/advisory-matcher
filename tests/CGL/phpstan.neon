@@ -1,0 +1,97 @@
+parameters:
+	scanDirectories:
+		- ../../.build/vendor/phpunit/phpunit/src
+		# The PSR interfaces the sources speak, and the PSR-7 implementation
+		# the tests build requests and responses with. This project resolves
+		# its own tree, so neither is on its autoloader.
+		- ../../.build/vendor/psr
+		- ../../.build/vendor/nyholm/psr7/src
+	paths:
+		- ../../src
+		- ../../tests/Unit
+	level: max
+	reportNonIntStringArrayKey: true
+	treatPhpDocTypesAsCertain: false
+
+	ergebnis:
+		noExtends:
+			classesAllowedToBeExtended:
+				- Exception
+
+	ignoreErrors:
+		# Named arguments are house style for calls carrying many parameters, and
+		# Advisory takes thirteen. Positional calls there would be unreadable and
+		# would silently accept a reordering.
+		- identifier: ergebnis.noNamedArgument
+		# An advisory whose feed names no fixed version is ordinary, and '' is how
+		# that absence is spelled. The default states the domain, rather than
+		# saving callers a keystroke.
+		- identifier: ergebnis.noConstructorParameterWithDefaultValue
+		# A feed that sent no `Retry-After` gave no delay, where 0 would be a
+		# real delay of zero seconds.
+		#
+		# Scoped to these files rather than switched off library-wide: a
+		# nullable that turns up anywhere else still has to argue for itself.
+		-
+			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			path: ../../src/Source/SourceFailure.php
+		-
+			identifier: ergebnis.noParameterWithNullDefaultValue
+			path: ../../src/Source/SourceFailure.php
+		# The same absence one step earlier: what OSV said to wait, read before
+		# the failure is filed under the ecosystems it cost. No `Retry-After` is
+		# no advice.
+		-
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			path: ../../src/Source/Http/HttpFailureClassifier.php
+		-
+			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			path: ../../src/Source/Osv/OsvCallFailure.php
+		-
+			identifier: ergebnis.noParameterWithNullDefaultValue
+			path: ../../src/Source/Osv/OsvCallFailure.php
+		# A component no CPE is known for has no identity, and an identity with
+		# an empty vendor and product would name no product while claiming to.
+		# The NVD source reads the absence as "cannot ask", never as "clean".
+		-
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			path: ../../src/Package/CpeIdentity.php
+		# The null-object PSR-16 cache. Its nullable signatures are the
+		# interface's own, so there is no non-nullable shape to choose.
+		-
+			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			path: ../../src/Source/Cache/NullCache.php
+		-
+			identifier: ergebnis.noParameterWithNullDefaultValue
+			path: ../../src/Source/Cache/NullCache.php
+		# A PSR-7 stream double. Its nullable signatures are the interface's own,
+		# so there is no non-nullable shape to choose.
+		-
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			path: ../../tests/Unit/Source/Http/EndlessStream.php
+		-
+			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			path: ../../tests/Unit/Source/Http/EndlessStream.php
+		-
+			identifier: ergebnis.noParameterWithNullDefaultValue
+			path: ../../tests/Unit/Source/Http/EndlessStream.php
+		-
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			path: ../../tests/Unit/Source/Http/ResettingStream.php
+		-
+			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			path: ../../tests/Unit/Source/Http/ResettingStream.php
+		-
+			identifier: ergebnis.noParameterWithNullDefaultValue
+			path: ../../tests/Unit/Source/Http/ResettingStream.php
+		# A PSR-16 cache double. Its nullable signatures are the interface's own;
+		# ttlOf() reports the TTL an entry was stored with, and PSR-16 allows none.
+		-
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			path: ../../tests/Unit/Source/Cache/SimpleCacheDouble.php
+		-
+			identifier: ergebnis.noParameterWithNullableTypeDeclaration
+			path: ../../tests/Unit/Source/Cache/SimpleCacheDouble.php
+		-
+			identifier: ergebnis.noParameterWithNullDefaultValue
+			path: ../../tests/Unit/Source/Cache/SimpleCacheDouble.php

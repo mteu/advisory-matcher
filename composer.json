@@ -1,0 +1,94 @@
+{
+	"name": "mteu/advisory-matcher",
+	"description": "PHP library for matching installed packages against security advisories from Packagist, OSV and NVD",
+	"license": "GPL-2.0-or-later",
+	"type": "library",
+	"keywords": [
+		"security",
+		"advisory",
+		"vulnerability",
+		"osv",
+		"nvd",
+		"packagist"
+	],
+	"authors": [
+		{
+			"name": "Martin Adler",
+			"email": "mteu@mailbox.org"
+		}
+	],
+	"homepage": "https://github.com/mteu/advisory-matcher",
+	"support": {
+		"issues": "https://github.com/mteu/advisory-matcher/issues",
+		"source": "https://github.com/mteu/advisory-matcher",
+		"security": "https://github.com/mteu/advisory-matcher/security/policy"
+	},
+	"require": {
+		"php": "~8.3.0 || ~8.4.0 || ~8.5.0",
+		"ext-ctype": "*",
+		"ext-mbstring": "*",
+		"composer/semver": "^3.4",
+		"psr/clock": "^1.0",
+		"psr/http-client": "^1.0",
+		"psr/http-factory": "^1.1",
+		"psr/http-message": "^2.0",
+		"psr/log": "^2.0 || ^3.0",
+		"psr/simple-cache": "^2.0 || ^3.0"
+	},
+	"require-dev": {
+		"armin/editorconfig-cli": "^2.1",
+		"ergebnis/composer-normalize": "^2.28",
+		"friendsofphp/php-cs-fixer": "^3.8",
+		"nyholm/psr7": "^1.8",
+		"phpunit/phpcov": "^10.0 || ^11.0",
+		"phpunit/phpunit": "^11.5 || ^12.1",
+		"shipmonk/composer-dependency-analyser": "^1.8.4"
+	},
+	"autoload": {
+		"psr-4": {
+			"mteu\\AdvisoryMatcher\\": "src/"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"mteu\\AdvisoryMatcher\\Tests\\": "tests/"
+		},
+		"exclude-from-classmap": [
+			"tests/CGL/vendor/"
+		]
+	},
+	"config": {
+		"allow-plugins": {
+			"ergebnis/composer-normalize": true,
+			"phpstan/extension-installer": true
+		},
+		"lock": true,
+		"sort-packages": true,
+		"vendor-dir": ".build/vendor"
+	},
+	"scripts": {
+		"post-install-cmd": [
+			"@cgl install"
+		],
+		"cgl": "@composer -d tests/CGL --",
+		"check": [
+			"@cgl lint",
+			"@cgl sca:php",
+			"@cgl analyze",
+			"@test"
+		],
+		"fix": "@cgl fix",
+		"lint": "@cgl lint",
+		"sca": "@cgl sca",
+		"test": [
+			"@test:unit"
+		],
+		"test:coverage": [
+			"@test:coverage:unit",
+			"@test:coverage:merge"
+		],
+		"test:coverage:merge": "phpcov merge --html .build/coverage/merged_html --clover .build/coverage/clover.xml --text php://stdout .build/coverage/php ",
+		"test:coverage:unit": "phpunit -c phpunit.unit.xml",
+		"test:unit": "@test:coverage:unit --no-coverage"
+	}
+}

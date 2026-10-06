@@ -1,0 +1,83 @@
+name: Tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  tests:
+    name: Tests (PHP ${{ matrix.php-version }} with ${{ matrix.dependencies }} dependencies)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: [ "8.3", "8.4", "8.5" ]
+        dependencies: [ "highest", "lowest" ]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Prepare environment
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer:v2
+          coverage: pcov
+
+      # Install dependencies
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: ${{ matrix.dependencies }}
+
+      # Run tests
+      - name: Run unit tests
+        run: composer test:unit
+
+  tests-coverage:
+    name: Test coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Prepare environment
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: composer:v2
+          coverage: pcov
+
+      # Install dependencies
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+
+      # Run tests
+      - name: Build coverage directory
+        run: mkdir -p .build/coverage
+      - name: Run tests with coverage
+        run: composer test:coverage
+
+      # Upload artifact
+      - name: Fix coverage path
+        working-directory: .build/coverage
+        run: sed -i 's#/home/runner/work/advisory-matcher-src/advisory-matcher-src#${{ github.workspace }}#g' clover.xml
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: .build/coverage/clover.xml
+          retention-days: 7
+
+# Coverage is generated and uploaded as an artifact, but not reported onward:
+# mteu/advisory-matcher-src is not registered with Coveralls or qlty yet, and
+# Coveralls rejects a job whose repository it does not know. Restore the
+# reporting job from mteu/sbom-parser once the repository is registered there.

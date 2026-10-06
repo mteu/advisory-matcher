@@ -1,0 +1,119 @@
+{
+    "resultsPerPage": 3,
+    "startIndex": 0,
+    "totalResults": 3,
+    "format": "NVD_CVE",
+    "version": "2.0",
+    "timestamp": "2026-09-24T12:00:00.000",
+    "vulnerabilities": [
+        {
+            "cve": {
+                "id": "CVE-2025-1217",
+                "sourceIdentifier": "security@php.net",
+                "vulnStatus": "Analyzed",
+                "published": "2025-03-29T06:15:36.557",
+                "descriptions": [
+                    {
+                        "lang": "en",
+                        "value": "The header parsing of the http request module has a flaw."
+                    }
+                ],
+                "metrics": {
+                    "cvssMetricV31": [
+                        {
+                            "source": "nvd@nist.gov",
+                            "type": "Primary",
+                            "cvssData": {
+                                "version": "3.1",
+                                "baseScore": 7.5,
+                                "baseSeverity": "HIGH"
+                            }
+                        }
+                    ]
+                },
+                "configurations": [
+                    {
+                        "nodes": [
+                            {
+                                "operator": "OR",
+                                "negate": false,
+                                "cpeMatch": [
+                                    {
+                                        "vulnerable": true,
+                                        "criteria": "cpe:2.3:a:php:php:*:*:*:*:*:*:*:*",
+                                        "versionStartIncluding": "8.1.0",
+                                        "versionEndExcluding": "8.1.32"
+                                    },
+                                    {
+                                        "vulnerable": true,
+                                        "criteria": "cpe:2.3:a:php:php:*:*:*:*:*:*:*:*",
+                                        "versionStartIncluding": "8.3.0",
+                                        "versionEndExcluding": "8.3.19"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "cve": {
+                "id": "CVE-2024-11235",
+                "sourceIdentifier": "security@php.net",
+                "vulnStatus": "Modified",
+                "published": "2025-04-04T01:15:39.787",
+                "descriptions": [
+                    {
+                        "lang": "en",
+                        "value": "A use-after-free in the __set handler, reached through the ??= operator."
+                    }
+                ],
+                "metrics": {
+                    "cvssMetricV40": [
+                        {
+                            "source": "security@php.net",
+                            "type": "Secondary",
+                            "cvssData": {
+                                "version": "4.0",
+                                "baseScore": 9.2,
+                                "baseSeverity": "CRITICAL"
+                            }
+                        }
+                    ]
+                },
+                "configurations": [
+                    {
+                        "nodes": [
+                            {
+                                "operator": "OR",
+                                "negate": false,
+                                "cpeMatch": [
+                                    {
+                                        "vulnerable": true,
+                                        "criteria": "cpe:2.3:a:php:php:*:*:*:*:*:*:*:*",
+                                        "versionStartIncluding": "8.3.0",
+                                        "versionEndExcluding": "8.3.18"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "cve": {
+                "id": "CVE-2024-0001",
+                "vulnStatus": "Rejected",
+                "published": "2024-01-01T00:00:00.000",
+                "descriptions": [
+                    {
+                        "lang": "en",
+                        "value": "** REJECT ** This candidate was withdrawn."
+                    }
+                ]
+            }
+        }
+    ]
+}
