@@ -50,8 +50,8 @@ composer test:coverage           # With coverage (needs a coverage driver)
 Run specific tests. PHPUnit lives in `.build/vendor`, so call it from there:
 
 ```bash
-.build/vendor/bin/phpunit -c phpunit.unit.xml tests/Unit/Advisory/AdvisoryMatcherTest.php
-.build/vendor/bin/phpunit -c phpunit.unit.xml --filter testMethodName
+.build/vendor/bin/phpunit -c phpunit.xml tests/Unit/Advisory/AdvisoryMatcherTest.php
+.build/vendor/bin/phpunit -c phpunit.xml --filter testMethodName
 ```
 
 Use hand-written test doubles named by role, such as `FailingAdvisorySource`.

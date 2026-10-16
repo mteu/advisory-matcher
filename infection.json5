@@ -1,0 +1,24 @@
+{
+	"$schema": ".build/vendor/infection/infection/resources/schema.json",
+	"source": {
+		"directories": [
+			"src"
+		]
+	},
+	"phpUnit": {
+		"configDir": ".",
+		"customPath": ".build/vendor/bin/phpunit"
+	},
+	"tmpDir": ".build/infection/tmp",
+	"logs": {
+		"text": ".build/infection/infection.log",
+		"html": ".build/infection/infection.html",
+		"summaryJson": ".build/infection/summary.json"
+	},
+	"mutators": {
+		"@default": true
+	},
+	"minMsi": 100,
+	"minCoveredMsi": 100,
+	"ignoreMsiWithNoMutations": true
+}
