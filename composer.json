@@ -40,6 +40,7 @@
 		"armin/editorconfig-cli": "^2.1",
 		"ergebnis/composer-normalize": "^2.28",
 		"friendsofphp/php-cs-fixer": "^3.8",
+		"infection/infection": "0.35.5",
 		"nyholm/psr7": "^1.8",
 		"phpunit/phpcov": "^10.0 || ^11.0",
 		"phpunit/phpunit": "^11.5 || ^12.1",
@@ -61,6 +62,7 @@
 	"config": {
 		"allow-plugins": {
 			"ergebnis/composer-normalize": true,
+			"infection/extension-installer": true,
 			"phpstan/extension-installer": true
 		},
 		"lock": true,
@@ -89,7 +91,9 @@
 			"@test:coverage:merge"
 		],
 		"test:coverage:merge": "phpcov merge --html .build/coverage/merged_html --clover .build/coverage/clover.xml --text php://stdout .build/coverage/php ",
-		"test:coverage:unit": "phpunit -c phpunit.unit.xml",
+		"test:coverage:unit": "phpunit -c phpunit.xml",
+		"test:mutation": "infection -c infection.json5 --threads=max",
+		"test:mutation:diff": "@test:mutation --git-diff-lines --git-diff-base=origin/main",
 		"test:unit": "@test:coverage:unit --no-coverage"
 	}
 }

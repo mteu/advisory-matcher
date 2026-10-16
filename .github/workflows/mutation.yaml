@@ -1,0 +1,54 @@
+name: Mutation tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+
+permissions:
+  contents: read
+
+jobs:
+  mutation:
+    name: Mutation tests (${{ github.event_name == 'pull_request' && 'changed lines' || 'all lines' }})
+    runs-on: ubuntu-latest
+    steps:
+      # The full history brings the pull request's base branch along, which
+      # the changed-lines run diffs against.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          tools: composer:v2
+          coverage: pcov
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+
+      - name: Mutate changed lines
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: composer test:mutation -- --git-diff-lines --git-diff-base="origin/$BASE_REF" --logger-github
+
+      - name: Mutate all lines
+        if: github.event_name == 'push'
+        run: composer test:mutation -- --logger-github
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: |
+            .build/infection/infection.html
+            .build/infection/infection.log
+            .build/infection/summary.json
+          if-no-files-found: ignore
+          retention-days: 7
