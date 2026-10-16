@@ -43,6 +43,14 @@ final readonly class CpeIdentity
         };
     }
 
+    public static function forPackageUrl(PackageUrl $packageUrl): ?self
+    {
+        return match (Ecosystem::fromPackageUrl($packageUrl)) {
+            Ecosystem::Php => self::application('php', 'php'),
+            Ecosystem::Composer, Ecosystem::Npm, Ecosystem::Unknown => null,
+        };
+    }
+
     public function nameForVersion(string $version): string
     {
         $release = $this->releaseOf($version);

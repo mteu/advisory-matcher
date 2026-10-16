@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Tests\Unit\Package;
 
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -64,6 +65,26 @@ final class EcosystemTest extends TestCase
         yield 'nonsense' => ['not-an-ecosystem'];
         yield 'pypi, which no source covers' => ['pypi'];
         yield 'maven, which no source covers' => ['maven'];
+    }
+
+    #[Test]
+    #[DataProvider('packageUrlProvider')]
+    public function derivesTheEcosystemFromTheWholePackageUrl(string $purl, Ecosystem $expected): void
+    {
+        self::assertSame($expected, Ecosystem::fromPackageUrl(PackageUrl::fromString($purl)));
+    }
+
+    /**
+     * @return iterable<string, array{string, Ecosystem}>
+     */
+    public static function packageUrlProvider(): iterable
+    {
+        yield 'Composer package' => ['pkg:composer/symfony/console', Ecosystem::Composer];
+        yield 'npm package' => ['pkg:npm/%40babel/core', Ecosystem::Npm];
+        yield 'PHP runtime' => ['pkg:generic/php@8.3.6', Ecosystem::Php];
+        yield 'other generic software' => ['pkg:generic/openssl', Ecosystem::Unknown];
+        yield 'generic software that only ends in php' => ['pkg:generic/vendor/php', Ecosystem::Unknown];
+        yield 'type no source covers' => ['pkg:pypi/django', Ecosystem::Unknown];
     }
 
     #[Test]

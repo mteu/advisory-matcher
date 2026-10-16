@@ -14,9 +14,11 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Tests\Unit\Package;
 
 use mteu\AdvisoryMatcher\Package\CpeIdentity;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(CpeIdentity::class)]
@@ -47,6 +49,24 @@ final class CpeIdentityTest extends TestCase
         self::assertNull(CpeIdentity::forComponent('php-fpm'));
         self::assertNull(CpeIdentity::forComponent('openssl'));
         self::assertNull(CpeIdentity::forComponent(''));
+    }
+
+    #[Test]
+    public function thePhpRuntimesPackageUrlResolvesToTheInterpretersOfficialCpe(): void
+    {
+        $identity = CpeIdentity::forPackageUrl(PackageUrl::fromString('pkg:generic/php@8.3.6'));
+
+        self::assertInstanceOf(CpeIdentity::class, $identity);
+        self::assertSame('cpe:2.3:a:php:php:', $identity->criteriaPrefix());
+    }
+
+    #[Test]
+    #[TestWith(['pkg:composer/php/php'])]
+    #[TestWith(['pkg:npm/php'])]
+    #[TestWith(['pkg:generic/openssl'])]
+    public function aPackageUrlOtherThanThePhpRuntimeResolvesToNoCpe(string $purl): void
+    {
+        self::assertNull(CpeIdentity::forPackageUrl(PackageUrl::fromString($purl)));
     }
 
     #[Test]

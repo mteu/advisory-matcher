@@ -28,6 +28,7 @@
 		"ext-ctype": "*",
 		"ext-mbstring": "*",
 		"composer/semver": "^3.4",
+		"package-url/packageurl-php": "^1.1",
 		"psr/clock": "^1.0",
 		"psr/http-client": "^1.0",
 		"psr/http-factory": "^1.1",

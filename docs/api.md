@@ -18,6 +18,7 @@ any release.
 ## Questions and answers
 
 - [`Source\PackageRef`](../src/Source/PackageRef.php): a package and version to check
+- [`Package\PackageUrl`](../src/Package/PackageUrl.php): a package's canonical package URL, without version
 - [`Package\Ecosystem`](../src/Package/Ecosystem.php): `composer`, `npm`, `php` or `unknown`
 - [`Source\AdvisoryBatch`](../src/Source/AdvisoryBatch.php): the result of one lookup
 - [`Source\AnsweredPackage`](../src/Source/AnsweredPackage.php): a checked package with its advisories
