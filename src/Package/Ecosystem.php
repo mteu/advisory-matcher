@@ -20,29 +20,6 @@ enum Ecosystem: string
     case Php = 'php';
     case Unknown = 'unknown';
 
-    public static function fromPackageUrlType(string $type): self
-    {
-        return match (strtolower(trim($type))) {
-            'composer', 'packagist' => self::Composer,
-            'npm', 'node' => self::Npm,
-            'php' => self::Php,
-            default => self::Unknown,
-        };
-    }
-
-    public static function fromPackageUrl(PackageUrl $packageUrl): self
-    {
-        return match (true) {
-            $packageUrl->type === 'composer' => self::Composer,
-            $packageUrl->type === 'npm' => self::Npm,
-            // The purl type registry has no `php` type. Upstream software
-            // outside any registry is `generic`, so the runtime is
-            // `pkg:generic/php`.
-            $packageUrl->type === 'generic' && $packageUrl->packageName() === 'php' => self::Php,
-            default => self::Unknown,
-        };
-    }
-
     public function getDisplayName(): string
     {
         return match ($this) {

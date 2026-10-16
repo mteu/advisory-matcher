@@ -15,6 +15,7 @@ namespace mteu\AdvisoryMatcher\Tests\Unit\Source\Osv;
 
 use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\AdvisoryBatch;
 use mteu\AdvisoryMatcher\Source\Cache\NullCache;
 use mteu\AdvisoryMatcher\Source\FailureReason;
@@ -103,9 +104,9 @@ final class OsvAdvisorySourceTest extends TestCase
         $http = new RecordingHttpClient([self::json('{"results": [{}, {}]}')]);
 
         $this->subject($http)->advisoriesFor([
-            new PackageRef(Ecosystem::Composer, 'monolog/monolog', '3.5.0'),
-            new PackageRef(Ecosystem::Composer, 'monolog/monolog', '2.9.1'),
-            new PackageRef(Ecosystem::Npm, 'lodash', '4.17.20'),
+            new PackageRef(PackageUrl::fromPackageName('composer', 'monolog/monolog'), '3.5.0'),
+            new PackageRef(PackageUrl::fromPackageName('composer', 'monolog/monolog'), '2.9.1'),
+            new PackageRef(PackageUrl::fromPackageName('npm', 'lodash'), '4.17.20'),
         ]);
 
         self::assertCount(1, $http->sentRequests());
@@ -125,8 +126,8 @@ final class OsvAdvisorySourceTest extends TestCase
     #[Test]
     public function twoVersionsOfOnePackageAreOneQueryAndBothAnswered(): void
     {
-        $current = new PackageRef(Ecosystem::Npm, 'lodash', '4.17.21');
-        $old = new PackageRef(Ecosystem::Npm, 'lodash', '3.10.1');
+        $current = new PackageRef(PackageUrl::fromPackageName('npm', 'lodash'), '4.17.21');
+        $old = new PackageRef(PackageUrl::fromPackageName('npm', 'lodash'), '3.10.1');
 
         $batch = $this->ask([$current, $old], [self::json('{"results": [{}]}')]);
 
@@ -140,8 +141,8 @@ final class OsvAdvisorySourceTest extends TestCase
         $http = new RecordingHttpClient();
 
         $batch = $this->subject($http)->advisoriesFor([
-            new PackageRef(Ecosystem::Php, 'php', '8.4.1'),
-            new PackageRef(Ecosystem::Unknown, 'zlib', '1.3'),
+            new PackageRef(PackageUrl::fromPackageName('generic', 'php'), '8.4.1'),
+            new PackageRef(PackageUrl::fromPackageName('generic', 'zlib'), '1.3'),
         ]);
 
         self::assertSame([], $http->sentRequests());
@@ -202,7 +203,7 @@ final class OsvAdvisorySourceTest extends TestCase
     public function aFailedChunkIsFiledUnderEveryEcosystemItCarried(): void
     {
         $batch = $this->ask(
-            [$this->npm('lodash'), new PackageRef(Ecosystem::Composer, 'monolog/monolog', '3.5.0')],
+            [$this->npm('lodash'), new PackageRef(PackageUrl::fromPackageName('composer', 'monolog/monolog'), '3.5.0')],
             [new Response(429, ['Retry-After' => '30'])],
         );
 
@@ -603,7 +604,7 @@ final class OsvAdvisorySourceTest extends TestCase
 
     private function npm(string $name): PackageRef
     {
-        return new PackageRef(Ecosystem::Npm, $name, '1.0.0');
+        return new PackageRef(PackageUrl::fromPackageName('npm', $name), '1.0.0');
     }
 
     private static function json(string $body): ResponseInterface

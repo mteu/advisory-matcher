@@ -18,6 +18,7 @@ use mteu\AdvisoryMatcher\Advisory\Nvd\NvdAdvisoryNormalizer;
 use mteu\AdvisoryMatcher\Clock\SystemClock;
 use mteu\AdvisoryMatcher\Package\CpeIdentity;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\AdvisoryBatch;
 use mteu\AdvisoryMatcher\Source\AdvisorySource;
 use mteu\AdvisoryMatcher\Source\AnsweredPackage;
@@ -93,12 +94,13 @@ final readonly class NvdAdvisorySource implements AdvisorySource
                 continue;
             }
 
-            /** @var array<string, list<Advisory>> $advisoriesByName */
-            $advisoriesByName = [];
+            /** @var array<string, list<Advisory>> $advisoriesByPackage */
+            $advisoriesByPackage = [];
 
             foreach ($query['packages'] as $package) {
-                $advisoriesByName[$package->name] ??= $this->normalizeAll($records, $package->name, $query);
-                $answeredFor[] = new AnsweredPackage($package, advisories: $advisoriesByName[$package->name]);
+                $key = $package->package->toString();
+                $advisoriesByPackage[$key] ??= $this->normalizeAll($records, $package->package, $query);
+                $answeredFor[] = new AnsweredPackage($package, advisories: $advisoriesByPackage[$key]);
             }
         }
 
@@ -121,7 +123,7 @@ final readonly class NvdAdvisorySource implements AdvisorySource
                 continue;
             }
 
-            $identity = CpeIdentity::forComponent($package->name);
+            $identity = CpeIdentity::forPackage($package->package);
             $cpeName = $identity?->nameForVersion($package->version) ?? '';
 
             if (!$identity instanceof CpeIdentity || $cpeName === '') {
@@ -144,14 +146,14 @@ final readonly class NvdAdvisorySource implements AdvisorySource
      * @param array{identity: CpeIdentity, release: string, packages: list<PackageRef>} $query
      * @return list<Advisory>
      */
-    private function normalizeAll(array $records, string $packageName, array $query): array
+    private function normalizeAll(array $records, PackageUrl $package, array $query): array
     {
         $advisories = [];
 
         foreach ($records as $cve) {
             // A withdrawn record describes no vulnerability. The query asks NVD to leave them out.
             if (($cve['vulnStatus'] ?? null) !== 'Rejected') {
-                $advisories[] = $this->normalizer->normalize($cve, $packageName, $query['identity'], $query['release']);
+                $advisories[] = $this->normalizer->normalize($cve, $package, $query['identity'], $query['release']);
             }
         }
 

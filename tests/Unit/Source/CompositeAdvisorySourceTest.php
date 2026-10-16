@@ -15,6 +15,7 @@ namespace mteu\AdvisoryMatcher\Tests\Unit\Source;
 
 use mteu\AdvisoryMatcher\Advisory\Severity;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\AnsweredPackage;
 use mteu\AdvisoryMatcher\Source\CompositeAdvisorySource;
 use mteu\AdvisoryMatcher\Source\FailureReason;
@@ -316,11 +317,11 @@ final class CompositeAdvisorySourceTest extends TestCase
 
     private function composer(string $name): PackageRef
     {
-        return new PackageRef(Ecosystem::Composer, $name, '1.0.0');
+        return new PackageRef(PackageUrl::fromPackageName('composer', $name), '1.0.0');
     }
 
     private function npm(string $name): PackageRef
     {
-        return new PackageRef(Ecosystem::Npm, $name, '4.17.20');
+        return new PackageRef(PackageUrl::fromPackageName('npm', $name), '4.17.20');
     }
 }

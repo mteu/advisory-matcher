@@ -14,9 +14,9 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Tests\Unit\Advisory;
 
 use mteu\AdvisoryMatcher\Advisory\Advisory;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
 use mteu\AdvisoryMatcher\Advisory\Severity;
-use mteu\AdvisoryMatcher\Package\Ecosystem;
 use mteu\AdvisoryMatcher\Version\AffectedVersions;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -129,8 +129,7 @@ final class AdvisoryTest extends TestCase
     {
         return (new \ReflectionClass(Advisory::class))->newInstanceArgs([
             'advisoryId' => 'PKSA-1111-2222-3333',
-            'packageName' => 'vendor/package',
-            'ecosystem' => Ecosystem::Composer,
+            'package' => PackageUrl::fromPackageName('composer', 'vendor/package'),
             'title' => 'A vulnerability',
             'link' => 'https://example.invalid/advisory',
             'cve' => '',

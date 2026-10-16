@@ -17,7 +17,7 @@ use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
 use mteu\AdvisoryMatcher\Advisory\Severity;
 use mteu\AdvisoryMatcher\Package\CpeIdentity;
-use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Version\AffectedVersions;
 use mteu\AdvisoryMatcher\Version\VersionRange;
 use Psr\Clock\ClockInterface;
@@ -50,12 +50,11 @@ final readonly class NvdAdvisoryNormalizer
 
     /**
      * @param array<string, mixed> $cve the `cve` object of one NVD `vulnerabilities` entry
-     * @param string $packageName
      * @param string $installedRelease picks which of a multi-branch CVE's fixes is the upgrade target; '' names the lowest
      */
     public function normalize(
         array $cve,
-        string $packageName,
+        PackageUrl $package,
         CpeIdentity $identity,
         string $installedRelease,
     ): Advisory {
@@ -64,8 +63,7 @@ final readonly class NvdAdvisoryNormalizer
 
         return new Advisory(
             advisoryId: 'NVD-' . $id,
-            packageName: $packageName,
-            ecosystem: Ecosystem::Php,
+            package: $package,
             title: $this->extractTitle($cve),
             link: 'https://nvd.nist.gov/vuln/detail/' . rawurlencode($id),
             // Every NVD record is a CVE record, so the id is the CVE

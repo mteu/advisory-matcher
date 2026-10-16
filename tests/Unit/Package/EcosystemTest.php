@@ -14,79 +14,13 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Tests\Unit\Package;
 
 use mteu\AdvisoryMatcher\Package\Ecosystem;
-use mteu\AdvisoryMatcher\Package\PackageUrl;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(Ecosystem::class)]
 final class EcosystemTest extends TestCase
 {
-    #[Test]
-    #[DataProvider('packageUrlTypeProvider')]
-    public function resolvesPackageUrlTypeToEcosystem(string $type, Ecosystem $expected): void
-    {
-        self::assertSame($expected, Ecosystem::fromPackageUrlType($type));
-    }
-
-    /**
-     * @return iterable<string, array{string, Ecosystem}>
-     */
-    public static function packageUrlTypeProvider(): iterable
-    {
-        yield 'composer' => ['composer', Ecosystem::Composer];
-        yield 'packagist alias' => ['packagist', Ecosystem::Composer];
-        yield 'npm' => ['npm', Ecosystem::Npm];
-        yield 'node alias' => ['node', Ecosystem::Npm];
-        yield 'php' => ['php', Ecosystem::Php];
-
-        yield 'uppercase is normalised' => ['COMPOSER', Ecosystem::Composer];
-        yield 'surrounding whitespace is trimmed' => ['  npm  ', Ecosystem::Npm];
-    }
-
-    #[Test]
-    #[DataProvider('unrecognisedTypeProvider')]
-    public function treatsUnrecognisedTypeAsUnknown(string $type): void
-    {
-        self::assertSame(Ecosystem::Unknown, Ecosystem::fromPackageUrlType($type));
-    }
-
-    /**
-     * @return iterable<string, array{string}>
-     */
-    public static function unrecognisedTypeProvider(): iterable
-    {
-        yield 'empty string' => [''];
-        yield 'whitespace only' => ['   '];
-        yield 'distribution package type' => ['deb'];
-        yield 'alpine package type' => ['apk'];
-        yield 'container image type' => ['oci'];
-        yield 'nonsense' => ['not-an-ecosystem'];
-        yield 'pypi, which no source covers' => ['pypi'];
-        yield 'maven, which no source covers' => ['maven'];
-    }
-
-    #[Test]
-    #[DataProvider('packageUrlProvider')]
-    public function derivesTheEcosystemFromTheWholePackageUrl(string $purl, Ecosystem $expected): void
-    {
-        self::assertSame($expected, Ecosystem::fromPackageUrl(PackageUrl::fromString($purl)));
-    }
-
-    /**
-     * @return iterable<string, array{string, Ecosystem}>
-     */
-    public static function packageUrlProvider(): iterable
-    {
-        yield 'Composer package' => ['pkg:composer/symfony/console', Ecosystem::Composer];
-        yield 'npm package' => ['pkg:npm/%40babel/core', Ecosystem::Npm];
-        yield 'PHP runtime' => ['pkg:generic/php@8.3.6', Ecosystem::Php];
-        yield 'other generic software' => ['pkg:generic/openssl', Ecosystem::Unknown];
-        yield 'generic software that only ends in php' => ['pkg:generic/vendor/php', Ecosystem::Unknown];
-        yield 'type no source covers' => ['pkg:pypi/django', Ecosystem::Unknown];
-    }
-
     #[Test]
     public function namesEveryEcosystemForDisplay(): void
     {
@@ -106,7 +40,7 @@ final class EcosystemTest extends TestCase
     public function everyCaseRoundTripsThroughItsBackingValue(): void
     {
         foreach (Ecosystem::cases() as $ecosystem) {
-            self::assertSame($ecosystem, Ecosystem::fromPackageUrlType($ecosystem->value));
+            self::assertSame($ecosystem, Ecosystem::from($ecosystem->value));
         }
     }
 }

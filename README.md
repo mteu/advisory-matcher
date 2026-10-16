@@ -37,7 +37,7 @@ See [framework setup](docs/frameworks.md) for TYPO3, Symfony, and Drupal example
 
 ```php
 use mteu\AdvisoryMatcher\Advisory\AdvisoryMatcher;
-use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\CompositeAdvisorySource;
 use mteu\AdvisoryMatcher\Source\Cache\CachingAdvisorySource;
 use mteu\AdvisoryMatcher\Source\PackageRef;
@@ -57,8 +57,8 @@ $matcher = new AdvisoryMatcher();
 $plain = static fn (string $text): string => preg_replace('/\p{Cc}/u', '', $text) ?? '?';
 
 $packages = [
-    new PackageRef(Ecosystem::Composer, 'symfony/http-kernel', '5.4.19'),
-    new PackageRef(Ecosystem::Npm, 'lodash', '4.17.20'),
+    new PackageRef(PackageUrl::fromString('pkg:composer/symfony/http-kernel'), '5.4.19'),
+    new PackageRef(PackageUrl::fromString('pkg:npm/lodash'), '4.17.20'),
 ];
 $batch = $source->advisoriesFor($packages);
 
@@ -94,8 +94,9 @@ foreach ($packages as $package) {
 ```
 
 To check the PHP runtime, add `NvdAdvisorySource($httpClient, $factory, $nvdApiKey)`
-and a `PackageRef(Ecosystem::Php, 'php', '8.3.6')`. The API key is optional but
-raises the rate limit.
+and a `PackageRef(PackageUrl::fromString('pkg:generic/php'), '8.3.6')`. The purl
+specification has no type for the PHP runtime, so it is a `generic` package. The
+API key is optional but raises the rate limit.
 
 ## 📝 Things to know
 
@@ -103,6 +104,7 @@ raises the rate limit.
 - Matching returns affected, not affected or undetermined. Undetermined means the version couldn't be parsed or no usable range existed. It does not mean clean.
 - Failures are yours to handle. `$batch->failures` lists them, each with a `FailureReason`. The library doesn't retry. Call `isTransient()` to see whether asking again makes sense.
 - Advisory text comes from third parties. Escape every field before you show it. I mean it.
+- Packages are named by package URL. `PackageUrl` lowercases a Composer vendor and name and keeps an npm name's case, as the purl specification has them. Build one from a registry name with `PackageUrl::fromPackageName('npm', '@babel/core')`.
 - Store findings by fingerprint, not by `advisoryId`. Get it with `$advisory->getFingerprint()` and look it up with `AdvisoryFingerprint::identitiesOf($advisory)`.
 - The library uses your HTTP client, so timeouts and proxy settings are yours to set. Each source also accepts `userAgent:` and `endpoint:`.
 

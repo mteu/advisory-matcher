@@ -120,7 +120,7 @@ final class AdvisoryFingerprintStoredFormatTest extends TestCase
                 ecosystem: Ecosystem::Composer,
             ),
             [
-                'composer|Symfony/Console|id|PKSA-4444-5555-6666',
+                'composer|symfony/console|id|PKSA-4444-5555-6666',
             ],
         ];
 
