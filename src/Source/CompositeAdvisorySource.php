@@ -86,7 +86,7 @@ final readonly class CompositeAdvisorySource implements AdvisorySource
         try {
             return $source->advisoriesFor($packages);
         } catch (\Exception $defect) {
-            // Only the message and not the exception because it carries the request that itself can carry a credential.
+            // Only the message, because the exception carries the request and the request can carry a credential.
             $this->logger->error('An advisory source threw instead of answering.', [
                 'source' => $source->name(),
                 'exception' => $defect::class,

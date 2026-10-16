@@ -123,11 +123,8 @@ final class VersionConstraintMatcherTest extends TestCase
     }
 
     /**
-     * The matcher exists only to stop composer/semver re-parsing the same
-     * strings, so it must answer exactly what composer/semver answers. The
-     * expectation tables above say what the answer is; this says the
-     * memoisation did not change it, so an upstream change and a caching
-     * defect fail in different places.
+     * The matcher only memoises composer/semver, so it must answer exactly as
+     * composer/semver does. This keeps a caching defect apart from an upstream change.
      */
     #[Test]
     #[DataProvider('everyCaseProvider')]
@@ -158,9 +155,8 @@ final class VersionConstraintMatcherTest extends TestCase
     }
 
     /**
-     * Corners of Composer's constraint language no advisory feed is known to
-     * emit, listed for the equivalence check only: what matters is that the
-     * matcher agrees with composer/semver there too, not what the answer is.
+     * Corners of Composer's constraint language that no advisory feed emits.
+     * Only agreement with composer/semver matters here.
      *
      * @return iterable<string, array{string, string}>
      */
@@ -182,8 +178,7 @@ final class VersionConstraintMatcherTest extends TestCase
     #[Test]
     public function aRejectedInputLeavesTheCachesUsable(): void
     {
-        // Nothing is cached when parsing throws, so the rejection repeats and
-        // the answers around it are unaffected.
+        // Nothing is cached when parsing throws, so the rejection repeats.
         self::assertTrue($this->matcher->satisfies('1.5.0', '^1.0'));
 
         for ($attempt = 0; $attempt < 2; $attempt++) {
@@ -210,8 +205,7 @@ final class VersionConstraintMatcherTest extends TestCase
             ['1.0.0-beta1', '>=1.0.0', true],
         ];
 
-        // Interleaved rather than grouped, so a cache that answered from the
-        // previous call instead of from its key would disagree with itself.
+        // Interleaved so a cache answering from the previous call would disagree with itself.
         for ($round = 0; $round < 3; $round++) {
             foreach ($questions as [$version, $constraint, $expected]) {
                 self::assertSame(
@@ -258,9 +252,8 @@ final class VersionConstraintMatcherTest extends TestCase
     #[Test]
     public function throwsOnADistributionVersionRatherThanGuessing(): void
     {
-        // Installed versions read off a distribution package look like this.
-        // The matcher must refuse them, so a caller can fall back deliberately
-        // instead of receiving a confident wrong answer.
+        // Distribution package versions look like this. The matcher must refuse them
+        // so a caller can fall back instead of getting a confident wrong answer.
         $this->expectException(\UnexpectedValueException::class);
 
         $this->matcher->satisfies('8.3.14-1~deb12u1', '^8.3');

@@ -24,8 +24,8 @@ final readonly class Advisory
     public string $packageName;
 
     /**
-     * @param list<AdvisoryReference> $references every feed that reported this
-     * @param string $firstPatchedVersion lowest fix on any branch, for display only; see AdvisoryMatcher::fixedVersionFor()
+     * @param list<AdvisoryReference> $references
+     * @param string $firstPatchedVersion lowest fix on any branch, so for display only. Use AdvisoryMatcher::fixedVersionFor() for the upgrade target
      */
     public function __construct(
         public string $advisoryId,

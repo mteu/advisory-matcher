@@ -16,17 +16,14 @@ namespace mteu\AdvisoryMatcher\Package;
 use PackageUrl\PackageUrl as SpecPackageUrl;
 
 /**
- * A package as a canonical package URL without version, qualifiers or
- * subpath. Advisories apply to ranges of versions, so the package they name
- * carries none.
+ * A canonical package URL that names a package but no version.
  *
- * Canonical per the current purl specification, which packageurl-php does
- * not fully apply: a Composer vendor and name are lowercased, an npm name
- * keeps its case.
+ * Follows the purl specification more closely than packageurl-php does.
+ * Composer names are lowercased and npm names keep their case.
  */
 final readonly class PackageUrl
 {
-    // Built once: matching compares package URLs by it, often by the million.
+    // Built once because matching compares package URLs by it constantly.
     private string $canonical;
 
     private function __construct(
@@ -44,7 +41,7 @@ final readonly class PackageUrl
     }
 
     /**
-     * @param string $purl a version, qualifiers and a subpath are allowed and dropped
+     * @param string $purl anything after the name is dropped
      * @throws \InvalidArgumentException
      */
     public static function fromString(string $purl): self
@@ -81,8 +78,7 @@ final readonly class PackageUrl
             throw new \InvalidArgumentException('Not a valid package URL.', 0, $exception);
         }
 
-        // Read back through the parser, which applies the per-type rules that
-        // building one does not.
+        // Building does not apply the per-type rules, parsing does.
         return self::fromParsed(self::parse($purl), $name);
     }
 
@@ -124,8 +120,7 @@ final readonly class PackageUrl
      */
     private static function parse(string $purl): SpecPackageUrl
     {
-        // The input is never echoed: it comes from SBOMs, VEX documents and
-        // stored records, and an exception message ends up in logs and views.
+        // The input is not echoed because exception messages end up in logs and views.
         try {
             $parsed = SpecPackageUrl::fromString($purl);
         } catch (\DomainException $exception) {
@@ -147,9 +142,7 @@ final readonly class PackageUrl
 
         return match ($type) {
             'composer' => new self($type, strtolower($namespace), strtolower($name)),
-            // packageurl-php lowercases an npm name, but the specification
-            // keeps it case-sensitive, and the feeds file a package published
-            // in mixed case, such as `JSONStream`, under that spelling.
+            // packageurl-php lowercases npm names, but feeds file mixed-case packages such as `JSONStream` under their spelling.
             'npm' => new self($type, $namespace, strcasecmp($nameAsWritten, $name) === 0 ? $nameAsWritten : $name),
             default => new self($type, $namespace, $name),
         };

@@ -47,8 +47,7 @@ final readonly class AffectedVersions
     }
 
     /**
-     * Reads the subset of Composer's syntax advisory feeds use: ranges joined by `|` or `||`,
-     * each a comma- or space-separated list of comparisons, a bare version, or `*`.
+     * Reads the subset of Composer's constraint syntax that advisory feeds use.
      *
      * @throws \InvalidArgumentException for anything outside that subset, such as `^`, `~` or `!=`
      */

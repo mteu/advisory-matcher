@@ -20,12 +20,10 @@ final readonly class PackageRef
 {
     public Ecosystem $ecosystem;
 
-    /**
-     * The name as the package's registry spells it, which is what a source asks its feed about.
-     */
+    /** The name as the package's registry spells it. */
     public string $name;
 
-    // Built once: batches and matching key and compare references by it.
+    // Built once because batches and matching compare references by it.
     private string $canonical;
 
     public function __construct(
@@ -38,7 +36,7 @@ final readonly class PackageRef
     }
 
     /**
-     * @param string $purl a package URL; one without a version gives a reference without one
+     * @param string $purl a package URL, without a version it gives a reference without one
      * @throws \InvalidArgumentException
      */
     public static function fromString(string $purl): self

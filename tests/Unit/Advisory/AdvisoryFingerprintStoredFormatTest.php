@@ -24,10 +24,8 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Consumers store these strings in their databases and in VEX assessments.
- * A change to any of them makes stored assessments stop matching, and their
- * findings come back. Change an expectation here only together with a
- * migration for the stored data.
+ * Consumers store these strings, so a change makes stored assessments stop
+ * matching. Change an expectation only together with a data migration.
  */
 #[CoversClass(AdvisoryFingerprint::class)]
 final class AdvisoryFingerprintStoredFormatTest extends TestCase

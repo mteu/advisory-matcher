@@ -67,7 +67,7 @@ final class AdvisoryBuilder
     }
 
     /**
-     * One advisory named by a CVE, a GHSA reference and a feed's own id, filed under this package.
+     * One advisory carrying every kind of identity, filed under this package.
      */
     public static function onPackage(PackageUrl $package): Advisory
     {

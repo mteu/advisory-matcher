@@ -148,7 +148,7 @@ final readonly class PackagistAdvisoryNormalizer
         try {
             return AffectedVersions::fromComposerConstraint($this->readString($record, 'affectedVersions'));
         } catch (\InvalidArgumentException) {
-            // If the syntax outside the modelled subset states nothing usable, report advisory as undetermined.
+            // Syntax outside the modelled subset leaves the advisory undetermined.
             return new AffectedVersions();
         }
     }

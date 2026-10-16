@@ -31,8 +31,7 @@ final class ComposerPackageNameValidatorTest extends TestCase
         yield 'digits' => ['vendor2/pkg3'];
         yield 'dots and underscores' => ['vendor.name/pkg_name'];
         yield 'double hyphen' => ['vendor/pkg--name'];
-        // Predates the lowercase convention, still installable — rejecting it
-        // would leave a real package unmonitored.
+        // Predates the lowercase convention but is still installable.
         yield 'historically cased' => ['PHPMailer/PHPMailer'];
     }
 

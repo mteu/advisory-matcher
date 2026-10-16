@@ -78,9 +78,7 @@ final class FrameworkFreeContractTest extends TestCase
         self::assertCount(1, $batch->advisoriesFor($composerPackage));
         self::assertCount(1, $batch->advisoriesFor($npmPackage));
 
-        // Neither answered for nor a failure: no configured source claims it,
-        // so nobody was asked. Calling that clean is the bug this field exists
-        // to prevent.
+        // No source claims it, so nobody was asked. Calling that clean is the bug this field prevents.
         self::assertFalse($batch->wasAnsweredFor($uncoveredPackage));
         self::assertSame([], $batch->advisoriesFor($uncoveredPackage));
     }

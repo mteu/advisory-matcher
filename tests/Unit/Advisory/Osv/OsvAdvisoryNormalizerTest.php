@@ -267,8 +267,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
         yield 'cvss low' => [null, [['score' => 3.9]], Severity::Low];
         yield 'cvss score given as a string' => [null, [['score' => '9.1']], Severity::Critical];
 
-        // OSV states CVSS as a vector string, which is what the schema defines
-        // `score` to be.
+        // The OSV schema defines `score` as a CVSS vector string.
         yield 'cvss 3.1 vector scoring 10.0' => [
             null,
             [['type' => 'CVSS_V3', 'score' => 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H']],
@@ -298,8 +297,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
             Severity::Critical,
         ];
 
-        // A record stating no usable severity is unknown: filed as low, it
-        // would fall below a raised minimum-severity threshold.
+        // Filed as low, an unusable severity would fall below a raised minimum threshold.
         yield 'neither stated' => [null, null, Severity::Unknown];
         yield 'severity entries carry no score' => [null, [['type' => 'CVSS_V3']], Severity::Unknown];
         yield 'a v4 vector alone' => [
@@ -345,8 +343,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
         yield 'no references' => [null, $canonical];
         yield 'references carry no url' => [[['type' => 'WEB']], $canonical];
 
-        // This string reaches a template as a link target, so a scheme that
-        // executes must never survive the feed.
+        // The string reaches a template as a link target, so no executable scheme may survive.
         yield 'javascript uri is rejected' => [[['url' => 'javascript:alert(1)']], $canonical];
         yield 'data uri is rejected' => [[['url' => 'data:text/html,<script>']], $canonical];
         yield 'unsafe url is skipped in favour of a later safe one' => [

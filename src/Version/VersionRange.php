@@ -20,7 +20,7 @@ final readonly class VersionRange
     private const string BOUND_PATTERN = '/\A[0-9A-Za-z][0-9A-Za-z.+~_:!-]*\z/';
 
     /**
-     * Every bound is optional; '' leaves that side open.
+     * Every bound is optional, '' leaves that side open.
      *
      * @param string $from inclusive lower bound (>=)
      * @param string $after exclusive lower bound (>)
