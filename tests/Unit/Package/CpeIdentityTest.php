@@ -18,7 +18,6 @@ use mteu\AdvisoryMatcher\Package\PackageUrl;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(CpeIdentity::class)]
@@ -42,6 +41,7 @@ final class CpeIdentityTest extends TestCase
     {
         yield 'a Composer package' => ['pkg:composer/typo3/cms-core'];
         yield 'a Composer package named like the runtime' => ['pkg:composer/php/php'];
+        yield 'an npm package named like the runtime' => ['pkg:npm/php'];
         yield 'another runtime' => ['pkg:generic/php-fpm'];
         yield 'another generic package' => ['pkg:generic/openssl'];
         yield 'the runtime under a type the specification does not register' => ['pkg:php/php'];
@@ -52,24 +52,6 @@ final class CpeIdentityTest extends TestCase
     public function aPackageNoCpeIsKnownForResolvesToNone(string $purl): void
     {
         self::assertNull(CpeIdentity::forPackage(PackageUrl::fromString($purl)));
-    }
-
-    #[Test]
-    public function thePhpRuntimesPackageUrlResolvesToTheInterpretersOfficialCpe(): void
-    {
-        $identity = CpeIdentity::forPackageUrl(PackageUrl::fromString('pkg:generic/php@8.3.6'));
-
-        self::assertInstanceOf(CpeIdentity::class, $identity);
-        self::assertSame('cpe:2.3:a:php:php:', $identity->criteriaPrefix());
-    }
-
-    #[Test]
-    #[TestWith(['pkg:composer/php/php'])]
-    #[TestWith(['pkg:npm/php'])]
-    #[TestWith(['pkg:generic/openssl'])]
-    public function aPackageUrlOtherThanThePhpRuntimeResolvesToNoCpe(string $purl): void
-    {
-        self::assertNull(CpeIdentity::forPackageUrl(PackageUrl::fromString($purl)));
     }
 
     #[Test]

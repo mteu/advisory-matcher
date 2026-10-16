@@ -16,12 +16,10 @@ namespace mteu\AdvisoryMatcher\Tests\Unit\Advisory;
 use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryFingerprint;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
-use mteu\AdvisoryMatcher\Advisory\Severity;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
 use mteu\AdvisoryMatcher\Package\PackageUrl;
-use mteu\AdvisoryMatcher\Version\AffectedVersions;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\DataProviderExternal;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
@@ -191,41 +189,8 @@ final class AdvisoryFingerprintTest extends TestCase
         }
     }
 
-    /**
-     * Identities are stored by consumers and written into assessments. A
-     * package spelled any of these ways has to keep producing these strings.
-     *
-     * @return iterable<string, array{string, string}>
-     */
-    public static function packagesAndTheKeyTheyAreStoredUnder(): iterable
-    {
-        yield 'a Composer package' => ['pkg:composer/symfony/http-kernel', 'composer|symfony/http-kernel'];
-        yield 'a Composer package in mixed case' => ['pkg:composer/Symfony/HTTP-Kernel', 'composer|symfony/http-kernel'];
-        yield 'an npm package' => ['pkg:npm/lodash', 'npm|lodash'];
-        yield 'a scoped npm package' => ['pkg:npm/@acme/widgets@2.1.0', 'npm|@acme/widgets'];
-        yield 'a scoped npm package with an encoded scope' => ['pkg:npm/%40acme/widgets', 'npm|@acme/widgets'];
-        yield 'an npm package published in mixed case' => ['pkg:npm/JSONStream', 'npm|JSONStream'];
-        yield 'the PHP runtime' => ['pkg:generic/php', 'php|php'];
-    }
-
     #[Test]
-    #[DataProvider('packagesAndTheKeyTheyAreStoredUnder')]
-    public function keepsTheIdentitiesConsumersHaveStored(string $purl, string $packageKey): void
-    {
-        $advisory = self::advisoryOn(PackageUrl::fromString($purl));
-
-        self::assertSame(
-            [
-                $packageKey . '|cve|CVE-2026-1234',
-                $packageKey . '|ghsa|GHSA-AAAA-BBBB-CCCC',
-                $packageKey . '|id|PKSA-1111-2222-3333',
-            ],
-            AdvisoryFingerprint::identitiesOf($advisory),
-        );
-    }
-
-    #[Test]
-    #[DataProvider('packagesAndTheKeyTheyAreStoredUnder')]
+    #[DataProviderExternal(AdvisoryFingerprintStoredFormatTest::class, 'packagesAndTheKeyTheyAreStoredUnder')]
     public function namesAStatementAboutTheAdvisoryByTheIdentitiesTheAdvisoryAnswersTo(string $purl, string $packageKey): void
     {
         $package = PackageUrl::fromString($purl);
@@ -233,7 +198,7 @@ final class AdvisoryFingerprintTest extends TestCase
 
         self::assertStringStartsWith($packageKey . '|', $naming[0]);
         self::assertEqualsCanonicalizing(
-            AdvisoryFingerprint::identitiesOf(self::advisoryOn($package)),
+            AdvisoryFingerprint::identitiesOf(AdvisoryBuilder::onPackage($package)),
             $naming,
         );
     }
@@ -266,21 +231,6 @@ final class AdvisoryFingerprintTest extends TestCase
         self::assertSame(
             ['npm|lodash|cve|CVE-2026-1234'],
             AdvisoryFingerprint::identitiesNaming(PackageUrl::fromString('pkg:npm/lodash'), ['CVE-2026-1234', 'cve-2026-1234']),
-        );
-    }
-
-    private static function advisoryOn(PackageUrl $package): Advisory
-    {
-        return new Advisory(
-            advisoryId: 'PKSA-1111-2222-3333',
-            package: $package,
-            title: 'A vulnerability',
-            link: '',
-            cve: 'CVE-2026-1234',
-            affectedVersions: AffectedVersions::fromComposerConstraint('<1.0.0'),
-            reportedAt: new \DateTimeImmutable('2026-01-01T00:00:00+00:00'),
-            severity: Severity::High,
-            references: [new AdvisoryReference('GitHub', 'GHSA-aaaa-bbbb-cccc')],
         );
     }
 }

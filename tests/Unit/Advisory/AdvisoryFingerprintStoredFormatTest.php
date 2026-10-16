@@ -17,6 +17,7 @@ use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryFingerprint;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -101,29 +102,6 @@ final class AdvisoryFingerprintStoredFormatTest extends TestCase
             ],
         ];
 
-        yield 'mixed-case legacy npm package' => [
-            AdvisoryBuilder::build(
-                advisoryId: 'OSV-GHSA-jjjj-kkkk-llll',
-                packageName: 'JSONStream',
-                ecosystem: Ecosystem::Npm,
-            ),
-            [
-                'npm|JSONStream|ghsa|GHSA-JJJJ-KKKK-LLLL',
-                'npm|JSONStream|id|OSV-GHSA-jjjj-kkkk-llll',
-            ],
-        ];
-
-        yield 'mixed-case Composer package' => [
-            AdvisoryBuilder::build(
-                advisoryId: 'PKSA-4444-5555-6666',
-                packageName: 'Symfony/Console',
-                ecosystem: Ecosystem::Composer,
-            ),
-            [
-                'composer|symfony/console|id|PKSA-4444-5555-6666',
-            ],
-        ];
-
         yield 'advisory nothing names' => [
             AdvisoryBuilder::build(
                 advisoryId: '',
@@ -135,5 +113,33 @@ final class AdvisoryFingerprintStoredFormatTest extends TestCase
                 'composer|vendor/package|hash|ef6fb8f2bed7518d705e4226fcaa92ae',
             ],
         ];
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function packagesAndTheKeyTheyAreStoredUnder(): iterable
+    {
+        yield 'a Composer package' => ['pkg:composer/symfony/http-kernel', 'composer|symfony/http-kernel'];
+        yield 'a Composer package in mixed case' => ['pkg:composer/Symfony/HTTP-Kernel', 'composer|symfony/http-kernel'];
+        yield 'an npm package' => ['pkg:npm/lodash', 'npm|lodash'];
+        yield 'a scoped npm package' => ['pkg:npm/@acme/widgets@2.1.0', 'npm|@acme/widgets'];
+        yield 'a scoped npm package with an encoded scope' => ['pkg:npm/%40acme/widgets', 'npm|@acme/widgets'];
+        yield 'an npm package published in mixed case' => ['pkg:npm/JSONStream', 'npm|JSONStream'];
+        yield 'the PHP runtime' => ['pkg:generic/php', 'php|php'];
+    }
+
+    #[Test]
+    #[DataProvider('packagesAndTheKeyTheyAreStoredUnder')]
+    public function keepsThePackageKeyConsumersHaveStoredWhateverTheSpelling(string $purl, string $packageKey): void
+    {
+        self::assertSame(
+            [
+                $packageKey . '|cve|CVE-2026-1234',
+                $packageKey . '|ghsa|GHSA-AAAA-BBBB-CCCC',
+                $packageKey . '|id|PKSA-1111-2222-3333',
+            ],
+            AdvisoryFingerprint::identitiesOf(AdvisoryBuilder::onPackage(PackageUrl::fromString($purl))),
+        );
     }
 }

@@ -65,4 +65,22 @@ final class AdvisoryBuilder
             Ecosystem::Unknown => PackageUrl::fromPackageName('pypi', $packageName),
         };
     }
+
+    /**
+     * One advisory named by a CVE, a GHSA reference and a feed's own id, filed under this package.
+     */
+    public static function onPackage(PackageUrl $package): Advisory
+    {
+        return new Advisory(
+            advisoryId: 'PKSA-1111-2222-3333',
+            package: $package,
+            title: 'A vulnerability',
+            link: '',
+            cve: 'CVE-2026-1234',
+            affectedVersions: AffectedVersions::fromComposerConstraint('<1.0.0'),
+            reportedAt: new \DateTimeImmutable('2026-01-01T00:00:00+00:00'),
+            severity: Severity::High,
+            references: [new AdvisoryReference('GitHub', 'GHSA-aaaa-bbbb-cccc')],
+        );
+    }
 }
