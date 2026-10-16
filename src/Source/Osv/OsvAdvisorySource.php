@@ -289,7 +289,7 @@ final readonly class OsvAdvisorySource implements AdvisorySource
      */
     private function normalize(array $record, OsvQuery $query): Advisory
     {
-        return $this->normalizer->normalize($record, $query->name, $query->ecosystem, $this->affectedEntryFor($record, $query));
+        return $this->normalizer->normalize($record, $query->package(), $this->affectedEntryFor($record, $query));
     }
 
     /**

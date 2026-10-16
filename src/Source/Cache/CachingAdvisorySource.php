@@ -25,7 +25,7 @@ use Psr\SimpleCache\CacheInterface;
 final readonly class CachingAdvisorySource implements AdvisorySource
 {
     // Bump when the encoded layout changes, so old entries are never read.
-    private const int SCHEMA_VERSION = 4;
+    private const int SCHEMA_VERSION = 5;
 
     public function __construct(
         private AdvisorySource $inner,
@@ -148,8 +148,7 @@ final readonly class CachingAdvisorySource implements AdvisorySource
     {
         $digest = hash('sha256', implode("\0", [
             $this->inner->name(),
-            $package->ecosystem->value,
-            $package->name,
+            $package->package->toString(),
             $package->version,
         ]));
 

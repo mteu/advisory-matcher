@@ -15,6 +15,7 @@ namespace mteu\AdvisoryMatcher\Tests\Unit\Source\Packagist;
 
 use mteu\AdvisoryMatcher\Package\ComposerPackageNameValidator;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\AdvisoryBatch;
 use mteu\AdvisoryMatcher\Source\FailureReason;
 use mteu\AdvisoryMatcher\Source\PackageRef;
@@ -255,7 +256,7 @@ final class PackagistAdvisorySourceTest extends TestCase
     public function packagesOutsideComposerAreNeitherAskedAboutNorAFailure(): void
     {
         $http = new RecordingHttpClient();
-        $npm = new PackageRef(Ecosystem::Npm, 'lodash', '4.17.20');
+        $npm = new PackageRef(PackageUrl::fromPackageName('npm', 'lodash'), '4.17.20');
 
         $batch = $this->subject($http)->advisoriesFor([$npm]);
 
@@ -332,8 +333,8 @@ final class PackagistAdvisorySourceTest extends TestCase
     public function onePackageAtTwoVersionsIsQueriedOnceAndAnsweredForBoth(): void
     {
         $http = new RecordingHttpClient([new Response(200, [], self::fixture('monolog-psr-log-and-unknown.json'))]);
-        $older = new PackageRef(Ecosystem::Composer, 'monolog/monolog', '1.10.0');
-        $newer = new PackageRef(Ecosystem::Composer, 'monolog/monolog', '3.0.0');
+        $older = new PackageRef(PackageUrl::fromPackageName('composer', 'monolog/monolog'), '1.10.0');
+        $newer = new PackageRef(PackageUrl::fromPackageName('composer', 'monolog/monolog'), '3.0.0');
 
         $batch = $this->subject($http)->advisoriesFor([$older, $newer]);
 
@@ -425,7 +426,7 @@ final class PackagistAdvisorySourceTest extends TestCase
 
     private function composer(string $name): PackageRef
     {
-        return new PackageRef(Ecosystem::Composer, $name, '1.0.0');
+        return new PackageRef(PackageUrl::fromPackageName('composer', $name), '1.0.0');
     }
 
     private static function fixture(string $name): string

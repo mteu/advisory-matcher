@@ -16,6 +16,7 @@ namespace mteu\AdvisoryMatcher\Tests\Unit\Source\Nvd;
 use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Advisory\Severity;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\AdvisoryBatch;
 use mteu\AdvisoryMatcher\Source\FailureReason;
 use mteu\AdvisoryMatcher\Source\Nvd\NvdAdvisorySource;
@@ -209,8 +210,8 @@ final class NvdAdvisorySourceTest extends TestCase
         $http = new RecordingHttpClient();
 
         $batch = $this->subject($http)->advisoriesFor([
-            new PackageRef(Ecosystem::Composer, 'php', '8.3.14'),
-            new PackageRef(Ecosystem::Npm, 'lodash', '4.17.21'),
+            new PackageRef(PackageUrl::fromPackageName('composer', 'php'), '8.3.14'),
+            new PackageRef(PackageUrl::fromPackageName('npm', 'lodash'), '4.17.21'),
         ]);
 
         self::assertSame([], $http->sentRequests());
@@ -239,19 +240,16 @@ final class NvdAdvisorySourceTest extends TestCase
     }
 
     #[Test]
-    public function oneComponentUnderTwoNamesAtOneReleaseIsAskedOnceAndFiledUnderBoth(): void
+    public function oneComponentAskedForTwiceAtOneReleaseIsAskedOnce(): void
     {
         $php = $this->php('8.3.14');
-        $runtime = $this->php('8.3.14', 'php-runtime');
         $http = new RecordingHttpClient([self::json(self::fixture('cves-php-8.3.14.json'))]);
 
-        $batch = $this->subject($http)->advisoriesFor([$php, $runtime, $php]);
+        $batch = $this->subject($http)->advisoriesFor([$php, $php]);
 
         self::assertCount(1, $http->sentRequests());
         self::assertTrue($batch->wasAnsweredFor($php));
-        self::assertTrue($batch->wasAnsweredFor($runtime));
         self::assertCount(2, $batch->advisoriesFor($php));
-        self::assertCount(2, $batch->advisoriesFor($runtime));
     }
 
     #[Test]
@@ -330,7 +328,7 @@ final class NvdAdvisorySourceTest extends TestCase
     public function a429IsRateLimitedCarriesRetryAfterAndStopsTheRemainingAsks(): void
     {
         $php = $this->php('8.3.14');
-        $older = $this->php('8.2.20', 'php-runtime');
+        $older = $this->php('8.2.20');
         $http = new RecordingHttpClient([new Response(429, ['Retry-After' => '30'])]);
 
         $batch = $this->subject($http)->advisoriesFor([$php, $older]);
@@ -347,7 +345,7 @@ final class NvdAdvisorySourceTest extends TestCase
     public function aRejectionCostsOnlyItsOwnComponent(): void
     {
         $php = $this->php('8.3.14');
-        $older = $this->php('8.2.20', 'php-runtime');
+        $older = $this->php('8.2.20');
         $http = new RecordingHttpClient([new Response(404), self::json(self::emptyPage())]);
 
         $batch = $this->subject($http)->advisoriesFor([$php, $older]);
@@ -474,7 +472,7 @@ final class NvdAdvisorySourceTest extends TestCase
 
     private function php(string $version, string $name = 'php'): PackageRef
     {
-        return new PackageRef(Ecosystem::Php, $name, $version);
+        return new PackageRef(PackageUrl::fromPackageName('generic', $name), $version);
     }
 
     /**

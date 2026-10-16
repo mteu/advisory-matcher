@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Tests\Unit\Advisory\Nvd;
 
 use mteu\AdvisoryMatcher\Advisory\Advisory;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryMatcher;
 use mteu\AdvisoryMatcher\Advisory\MatchResult;
 use mteu\AdvisoryMatcher\Advisory\Nvd\NvdAdvisoryNormalizer;
@@ -284,7 +285,7 @@ final class NvdAdvisoryNormalizerTest extends TestCase
     private function normalize(array $record, string $installedRelease = '8.3.14'): Advisory
     {
         return (new NvdAdvisoryNormalizer(FrozenClock::at(self::NOW)))
-            ->normalize($record, 'php', CpeIdentity::application('php', 'php'), $installedRelease);
+            ->normalize($record, PackageUrl::fromString('pkg:generic/php'), CpeIdentity::application('php', 'php'), $installedRelease);
     }
 
     /**

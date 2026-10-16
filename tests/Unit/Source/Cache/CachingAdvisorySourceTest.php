@@ -15,6 +15,7 @@ namespace mteu\AdvisoryMatcher\Tests\Unit\Source\Cache;
 
 use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\Cache\CachedAnswerCodec;
 use mteu\AdvisoryMatcher\Source\Cache\CachingAdvisorySource;
 use mteu\AdvisoryMatcher\Source\FailureReason;
@@ -51,7 +52,7 @@ final class CachingAdvisorySourceTest extends TestCase
     #[Test]
     public function packagesOutsideTheCoveredEcosystemsAreNeitherAskedAboutNorFailed(): void
     {
-        $npm = new PackageRef(Ecosystem::Npm, 'lodash', '4.17.20');
+        $npm = new PackageRef(PackageUrl::fromPackageName('npm', 'lodash'), '4.17.20');
 
         $batch = $this->subject()->advisoriesFor([$npm]);
 
@@ -132,8 +133,8 @@ final class CachingAdvisorySourceTest extends TestCase
     #[Test]
     public function eachVersionIsCachedWithItsOwnAnswer(): void
     {
-        $newer = new PackageRef(Ecosystem::Php, 'php', '8.3.14');
-        $older = new PackageRef(Ecosystem::Php, 'php', '8.2.10');
+        $newer = new PackageRef(PackageUrl::fromPackageName('generic', 'php'), '8.3.14');
+        $older = new PackageRef(PackageUrl::fromPackageName('generic', 'php'), '8.2.10');
         $forNewer = AdvisoryBuilder::build(packageName: 'php', ecosystem: Ecosystem::Php, firstPatchedVersion: '8.3.15');
         $forOlder = AdvisoryBuilder::build(packageName: 'php', ecosystem: Ecosystem::Php, firstPatchedVersion: '8.2.27');
         $inner = (new RecordingAdvisorySource([Ecosystem::Php]))
@@ -264,7 +265,7 @@ final class CachingAdvisorySourceTest extends TestCase
 
     private function package(string $name): PackageRef
     {
-        return new PackageRef(Ecosystem::Composer, $name, '1.0.0');
+        return new PackageRef(PackageUrl::fromPackageName('composer', $name), '1.0.0');
     }
 
     private function advisory(string $packageName, string $cve): Advisory

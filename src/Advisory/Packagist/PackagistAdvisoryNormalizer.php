@@ -16,7 +16,7 @@ namespace mteu\AdvisoryMatcher\Advisory\Packagist;
 use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
 use mteu\AdvisoryMatcher\Advisory\Severity;
-use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Version\AffectedVersions;
 use Psr\Clock\ClockInterface;
 
@@ -34,16 +34,14 @@ final readonly class PackagistAdvisoryNormalizer
 
     /**
      * @param array<mixed> $record one entry of the list Packagist files under a package
-     * @param string $packageName the caller's spelling, which Packagist's canonical name may not match
      */
-    public function normalize(array $record, string $packageName): Advisory
+    public function normalize(array $record, PackageUrl $package): Advisory
     {
         $affectedVersions = $this->readAffectedVersions($record);
 
         return new Advisory(
             advisoryId: $this->readString($record, 'advisoryId'),
-            packageName: $packageName,
-            ecosystem: Ecosystem::Composer,
+            package: $package,
             title: $this->readString($record, 'title'),
             link: $this->safeUrl($this->readString($record, 'link')),
             cve: $this->readString($record, 'cve'),

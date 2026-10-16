@@ -17,7 +17,7 @@ use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
 use mteu\AdvisoryMatcher\Advisory\Cvss\CvssV3Vector;
 use mteu\AdvisoryMatcher\Advisory\Severity;
-use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Version\AffectedVersions;
 use mteu\AdvisoryMatcher\Version\VersionRange;
 use Psr\Clock\ClockInterface;
@@ -38,16 +38,14 @@ final readonly class OsvAdvisoryNormalizer
      */
     public function normalize(
         array $vulnerability,
-        string $packageName,
-        Ecosystem $ecosystem,
+        PackageUrl $package,
         array $affected,
     ): Advisory {
         $id = is_string($vulnerability['id'] ?? null) ? $vulnerability['id'] : 'OSV-unknown';
 
         return new Advisory(
             advisoryId: 'OSV-' . $id,
-            packageName: $packageName,
-            ecosystem: $ecosystem,
+            package: $package,
             title: $this->extractTitle($vulnerability),
             link: $this->extractLink($vulnerability, $id),
             cve: $this->extractCve($vulnerability),

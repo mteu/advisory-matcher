@@ -14,49 +14,118 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Package;
 
 use PackageUrl\PackageUrl as SpecPackageUrl;
-use PackageUrl\PackageUrlParser;
 
 /**
- * A package's identity as a canonical package URL without version,
- * qualifiers or subpath. Two spellings of one package, such as `@scope` and
- * `%40scope`, come out as the same {@see toString()}.
+ * A package as a canonical package URL without version, qualifiers or
+ * subpath. Advisories apply to ranges of versions, so the package they name
+ * carries none.
+ *
+ * Canonical per the current purl specification, which packageurl-php does
+ * not fully apply: a Composer vendor and name are lowercased, an npm name
+ * keeps its case.
  */
 final readonly class PackageUrl
 {
-    private const string TYPE_PATTERN = '/^[a-z][a-z0-9.+-]*$/D';
+    // Built once: matching compares package URLs by it, often by the million.
+    private string $canonical;
 
-    // Earlier releases accepted these as aliases. The purl type registry
-    // defines none of them, so a package URL carrying one names nothing.
-    private const array UNREGISTERED_TYPES = ['packagist', 'node', 'php'];
-
-    /**
-     * @param string $namespace '' for a package without one, such as an unscoped npm package
-     */
     private function __construct(
         public string $type,
         public string $namespace,
         public string $name,
     ) {
-        if (preg_match(self::TYPE_PATTERN, $type) !== 1 || in_array($type, self::UNREGISTERED_TYPES, true)) {
-            throw new \InvalidArgumentException('A package URL needs a valid, registered type.');
+        if (trim($name) === '') {
+            throw new \InvalidArgumentException('A package URL needs a name.');
         }
 
-        if ($name === '' || str_contains($name, '/')) {
-            throw new \InvalidArgumentException('A package URL needs a name without a slash.');
+        $segments = $namespace === '' ? [] : explode('/', $namespace);
+        $segments[] = $name;
+        $this->canonical = 'pkg:' . $type . '/' . implode('/', array_map(self::encodeSegment(...), $segments));
+    }
+
+    /**
+     * @param string $purl a version, qualifiers and a subpath are allowed and dropped
+     * @throws \InvalidArgumentException
+     */
+    public static function fromString(string $purl): self
+    {
+        $parsed = self::parse($purl);
+
+        return self::fromParsed($parsed, self::nameAsWritten($purl));
+    }
+
+    /**
+     * @return string '' when the package URL names none
+     * @throws \InvalidArgumentException
+     */
+    public static function versionIn(string $purl): string
+    {
+        return self::parse($purl)->getVersion() ?? '';
+    }
+
+    /**
+     * @param string $packageName the name as its registry spells it, such as `symfony/console` or `@babel/core`
+     * @throws \InvalidArgumentException
+     */
+    public static function fromPackageName(string $type, string $packageName): self
+    {
+        $separatorPosition = strrpos($packageName, '/');
+        $namespace = $separatorPosition === false ? '' : substr($packageName, 0, $separatorPosition);
+        $name = $separatorPosition === false ? $packageName : substr($packageName, $separatorPosition + 1);
+
+        try {
+            $built = new SpecPackageUrl($type, $name);
+            $built->setNamespace($namespace === '' ? null : $namespace);
+            $purl = $built->toString();
+        } catch (\DomainException $exception) {
+            throw new \InvalidArgumentException('Not a valid package URL.', 0, $exception);
         }
 
-        if ($namespace !== '' && in_array('', explode('/', $namespace), true)) {
-            throw new \InvalidArgumentException('A package URL namespace cannot have an empty segment.');
-        }
+        // Read back through the parser, which applies the per-type rules that
+        // building one does not.
+        return self::fromParsed(self::parse($purl), $name);
+    }
+
+    public function packageName(): string
+    {
+        return $this->namespace === '' ? $this->name : $this->namespace . '/' . $this->name;
+    }
+
+    public function ecosystem(): Ecosystem
+    {
+        return match (true) {
+            $this->type === 'composer' => Ecosystem::Composer,
+            $this->type === 'npm' => Ecosystem::Npm,
+            $this->type === 'generic' && $this->namespace === '' && $this->name === 'php' => Ecosystem::Php,
+            default => Ecosystem::Unknown,
+        };
+    }
+
+    public function toString(): string
+    {
+        return $this->canonical;
+    }
+
+    /**
+     * @param string $version '' for none
+     */
+    public function toStringAtVersion(string $version): string
+    {
+        return $version === '' ? $this->toString() : $this->toString() . '@' . self::encodeSegment($version);
+    }
+
+    public function equals(self $other): bool
+    {
+        return $this->canonical === $other->canonical;
     }
 
     /**
      * @throws \InvalidArgumentException
      */
-    public static function fromString(string $purl): self
+    private static function parse(string $purl): SpecPackageUrl
     {
-        // The input is never echoed: it comes from SBOMs and stored records,
-        // and an exception message ends up in logs and backend views.
+        // The input is never echoed: it comes from SBOMs, VEX documents and
+        // stored records, and an exception message ends up in logs and views.
         try {
             $parsed = SpecPackageUrl::fromString($purl);
         } catch (\DomainException $exception) {
@@ -67,74 +136,37 @@ final readonly class PackageUrl
             throw new \InvalidArgumentException('Not a valid package URL.');
         }
 
+        return $parsed;
+    }
+
+    private static function fromParsed(SpecPackageUrl $parsed, string $nameAsWritten): self
+    {
+        $type = $parsed->getType();
+        $namespace = $parsed->getNamespace() ?? '';
         $name = $parsed->getName();
-        if ($parsed->getType() === 'npm') {
-            // packageurl-php lowercases npm names. The current specification
-            // keeps their case, since legacy packages such as JSONStream are
-            // mixed-case on the registry.
-            $parser = new PackageUrlParser();
-            $name = $parser->normalizeName($parser->parse($purl)['name'], null) ?? $name;
-        }
 
-        return self::canonical($parsed->getType(), $parsed->getNamespace() ?? '', $name);
+        return match ($type) {
+            'composer' => new self($type, strtolower($namespace), strtolower($name)),
+            // packageurl-php lowercases an npm name, but the specification
+            // keeps it case-sensitive, and the feeds file a package published
+            // in mixed case, such as `JSONStream`, under that spelling.
+            'npm' => new self($type, $namespace, strcasecmp($nameAsWritten, $name) === 0 ? $nameAsWritten : $name),
+            default => new self($type, $namespace, $name),
+        };
     }
 
-    /**
-     * @param string $packageName the name in its ecosystem's own spelling, namespace and name joined by a slash, such as `symfony/console` or `@babel/core`
-     * @throws \InvalidArgumentException
-     */
-    public static function fromPackageName(string $type, string $packageName): self
+    private static function nameAsWritten(string $purl): string
     {
-        $separatorPosition = strrpos($packageName, '/');
+        $withoutSubpath = explode('#', $purl)[0];
+        $withoutQualifiers = explode('?', $withoutSubpath)[0];
+        $segments = explode('/', rtrim($withoutQualifiers, '/'));
 
-        if ($separatorPosition === false) {
-            return self::canonical(strtolower($type), '', $packageName);
-        }
-
-        if ($separatorPosition === 0) {
-            throw new \InvalidArgumentException('A package URL namespace cannot have an empty segment.');
-        }
-
-        return self::canonical(
-            strtolower($type),
-            substr($packageName, 0, $separatorPosition),
-            substr($packageName, $separatorPosition + 1),
-        );
-    }
-
-    public function packageName(): string
-    {
-        return $this->namespace === '' ? $this->name : $this->namespace . '/' . $this->name;
-    }
-
-    public function toString(): string
-    {
-        $namespace = $this->namespace === ''
-            ? ''
-            : implode('/', array_map(self::encodeSegment(...), explode('/', $this->namespace))) . '/';
-
-        return 'pkg:' . $this->type . '/' . $namespace . self::encodeSegment($this->name);
-    }
-
-    public function equals(self $other): bool
-    {
-        return $this->type === $other->type
-            && $this->namespace === $other->namespace
-            && $this->name === $other->name;
-    }
-
-    private static function canonical(string $type, string $namespace, string $name): self
-    {
-        if ($type === 'composer') {
-            return new self($type, strtolower($namespace), strtolower($name));
-        }
-
-        return new self($type, $namespace, $name);
+        return rawurldecode(explode('@', end($segments))[0]);
     }
 
     private static function encodeSegment(string $segment): string
     {
-        // The specification leaves the colon unencoded.
-        return str_replace('%3A', ':', rawurlencode($segment));
+        // As packageurl-php encodes it, so the result reads back unchanged.
+        return strtr(rawurlencode($segment), ['%3A' => ':']);
     }
 }

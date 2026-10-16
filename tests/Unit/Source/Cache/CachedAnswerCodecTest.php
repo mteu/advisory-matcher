@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Tests\Unit\Source\Cache;
 
 use mteu\AdvisoryMatcher\Advisory\Advisory;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
 use mteu\AdvisoryMatcher\Advisory\Severity;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
@@ -35,8 +36,7 @@ final class CachedAnswerCodecTest extends TestCase
     {
         $advisory = new Advisory(
             advisoryId: 'PKSA-dmw8-jd8k-q3c6',
-            packageName: 'monolog/monolog',
-            ecosystem: Ecosystem::Composer,
+            package: PackageUrl::fromPackageName('composer', 'monolog/monolog'),
             title: 'Header injection in NativeMailerHandler',
             link: 'https://github.com/Seldaek/monolog/pull/448',
             cve: '',
@@ -85,8 +85,7 @@ final class CachedAnswerCodecTest extends TestCase
         $codec = new CachedAnswerCodec();
         $entry = $codec->encode([new Advisory(
             advisoryId: 'PKSA-1',
-            packageName: 'vendor/one',
-            ecosystem: Ecosystem::Npm,
+            package: PackageUrl::fromPackageName('npm', 'vendor/one'),
             title: 'A vulnerability',
             link: '',
             cve: '',
@@ -118,33 +117,37 @@ final class CachedAnswerCodecTest extends TestCase
     }
 
     #[Test]
-    public function theEcosystemSurvivesTheRoundTrip(): void
+    public function thePackageUrlSurvivesTheRoundTrip(): void
     {
         $codec = new CachedAnswerCodec();
-        $advisories = [AdvisoryBuilder::build(ecosystem: Ecosystem::Npm)];
+        $advisories = [AdvisoryBuilder::build(packageName: 'JSONStream', ecosystem: Ecosystem::Npm)];
 
-        self::assertSame(Ecosystem::Npm, $codec->decode($codec->encode($advisories))[0]->ecosystem);
+        $decoded = $codec->decode($codec->encode($advisories))[0];
+
+        self::assertSame('pkg:npm/JSONStream', $decoded->package->toString());
+        self::assertSame(Ecosystem::Npm, $decoded->ecosystem);
     }
 
     /**
      * @return iterable<string, array{mixed}>
      */
-    public static function unreadableEcosystems(): iterable
+    public static function unreadablePackageUrls(): iterable
     {
-        yield 'an ecosystem this library does not know' => ['cobol'];
-        yield 'no ecosystem, as an entry written before it existed' => [null];
+        yield 'not a package URL' => ['vendor/one'];
+        yield 'not a string' => [42];
+        yield 'no package URL, as an entry written before it existed' => [null];
     }
 
     #[Test]
-    #[DataProvider('unreadableEcosystems')]
-    public function anAdvisoryWithoutAReadableEcosystemIsRefused(mixed $ecosystem): void
+    #[DataProvider('unreadablePackageUrls')]
+    public function anAdvisoryWithoutAReadablePackageUrlIsRefused(mixed $packageUrl): void
     {
         $codec = new CachedAnswerCodec();
         $entry = $codec->encode([AdvisoryBuilder::build()]);
         $advisory = $entry[0];
-        unset($advisory['ecosystem']);
-        if ($ecosystem !== null) {
-            $advisory['ecosystem'] = $ecosystem;
+        unset($advisory['packageUrl']);
+        if ($packageUrl !== null) {
+            $advisory['packageUrl'] = $packageUrl;
         }
         $entry[0] = $advisory;
 

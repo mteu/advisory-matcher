@@ -16,15 +16,14 @@ namespace mteu\AdvisoryMatcher\Source\Cache;
 use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
 use mteu\AdvisoryMatcher\Advisory\Severity;
-use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Version\AffectedVersions;
 
 /**
  * @phpstan-type EncodedReference array{name: string, remoteId: string}
  * @phpstan-type EncodedAdvisory array{
  *     advisoryId: string,
- *     packageName: string,
- *     ecosystem: string,
+ *     packageUrl: string,
  *     title: string,
  *     link: string,
  *     cve: string,
@@ -39,7 +38,7 @@ use mteu\AdvisoryMatcher\Version\AffectedVersions;
 final readonly class CachedAnswerCodec
 {
     private const array STRING_FIELDS = [
-        'advisoryId', 'packageName', 'ecosystem', 'title', 'link', 'cve', 'affectedVersions',
+        'advisoryId', 'packageUrl', 'title', 'link', 'cve', 'affectedVersions',
         'reportedAt', 'severity', 'firstPatchedVersion',
     ];
 
@@ -72,8 +71,7 @@ final readonly class CachedAnswerCodec
     {
         return [
             'advisoryId' => $advisory->advisoryId,
-            'packageName' => $advisory->packageName,
-            'ecosystem' => $advisory->ecosystem->value,
+            'packageUrl' => $advisory->package->toString(),
             'title' => $advisory->title,
             'link' => $advisory->link,
             'cve' => $advisory->cve,
@@ -112,19 +110,17 @@ final readonly class CachedAnswerCodec
             $fields[$field] = $value;
         }
 
-        $ecosystem = Ecosystem::tryFrom($fields['ecosystem']);
         $severity = Severity::tryFrom($fields['severity']);
         $reportedAt = \DateTimeImmutable::createFromFormat(\DateTimeInterface::ATOM, $fields['reportedAt']);
 
-        if ($ecosystem === null || $severity === null || $reportedAt === false) {
-            throw UnreadableCacheEntry::because('an advisory has no readable ecosystem, severity or date');
+        if ($severity === null || $reportedAt === false) {
+            throw UnreadableCacheEntry::because('an advisory has no readable severity or date');
         }
 
         try {
             return new Advisory(
                 advisoryId: $fields['advisoryId'],
-                packageName: $fields['packageName'],
-                ecosystem: $ecosystem,
+                package: PackageUrl::fromString($fields['packageUrl']),
                 title: $fields['title'],
                 link: $fields['link'],
                 cve: $fields['cve'],

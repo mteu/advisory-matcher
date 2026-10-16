@@ -18,6 +18,7 @@ use mteu\AdvisoryMatcher\Advisory\Packagist\PackagistAdvisoryNormalizer;
 use mteu\AdvisoryMatcher\Clock\SystemClock;
 use mteu\AdvisoryMatcher\Package\ComposerPackageNameValidator;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\AdvisoryBatch;
 use mteu\AdvisoryMatcher\Source\AdvisorySource;
 use mteu\AdvisoryMatcher\Source\AnsweredPackage;
@@ -229,7 +230,7 @@ final readonly class PackagistAdvisorySource implements AdvisorySource
             $records = $index[strtolower($package->name)] ?? null;
 
             if ($records !== null) {
-                $answered[] = new AnsweredPackage($package, advisories: $this->normalizeRecords($records, $package->name));
+                $answered[] = new AnsweredPackage($package, advisories: $this->normalizeRecords($records, $package->package));
             }
         }
 
@@ -240,7 +241,7 @@ final readonly class PackagistAdvisorySource implements AdvisorySource
      * @param list<mixed> $records
      * @return list<Advisory>
      */
-    private function normalizeRecords(array $records, string $packageName): array
+    private function normalizeRecords(array $records, PackageUrl $package): array
     {
         $advisories = [];
         $seen = [];
@@ -256,7 +257,7 @@ final readonly class PackagistAdvisorySource implements AdvisorySource
             }
 
             $seen[$advisoryId] = true;
-            $advisories[] = $this->normalizer->normalize($record, $packageName);
+            $advisories[] = $this->normalizer->normalize($record, $package);
         }
 
         return $advisories;

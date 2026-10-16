@@ -14,26 +14,50 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Source;
 
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 
 final readonly class PackageRef
 {
+    public Ecosystem $ecosystem;
+
+    /**
+     * The name as the package's registry spells it, which is what a source asks its feed about.
+     */
+    public string $name;
+
+    // Built once: batches and matching key and compare references by it.
+    private string $canonical;
+
     public function __construct(
-        public Ecosystem $ecosystem,
-        public string $name,
+        public PackageUrl $package,
         public string $version,
     ) {
-        if (trim($name) === '') {
-            throw new \InvalidArgumentException('A package reference needs a name.');
-        }
+        $this->ecosystem = $package->ecosystem();
+        $this->name = $package->packageName();
+        $this->canonical = $package->toStringAtVersion($version);
+    }
+
+    /**
+     * @param string $purl a package URL; one without a version gives a reference without one
+     * @throws \InvalidArgumentException
+     */
+    public static function fromString(string $purl): self
+    {
+        return new self(PackageUrl::fromString($purl), PackageUrl::versionIn($purl));
+    }
+
+    public function toString(): string
+    {
+        return $this->canonical;
     }
 
     public function identity(): string
     {
-        return $this->ecosystem->value . '|' . $this->name . '|' . $this->version;
+        return $this->canonical;
     }
 
     public function equals(self $other): bool
     {
-        return $this->identity() === $other->identity();
+        return $this->canonical === $other->canonical;
     }
 }

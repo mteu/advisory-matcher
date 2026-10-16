@@ -35,17 +35,17 @@ final readonly class CpeIdentity
         return new self('a', $vendor, $product);
     }
 
-    public static function forComponent(string $packageName): ?self
+    public static function forPackage(PackageUrl $package): ?self
     {
-        return match (strtolower(trim($packageName))) {
-            'php', 'php-runtime' => self::application('php', 'php'),
-            default => null,
+        return match ($package->ecosystem()) {
+            Ecosystem::Php => self::application('php', 'php'),
+            Ecosystem::Composer, Ecosystem::Npm, Ecosystem::Unknown => null,
         };
     }
 
     public static function forPackageUrl(PackageUrl $packageUrl): ?self
     {
-        return match (Ecosystem::fromPackageUrl($packageUrl)) {
+        return match ($packageUrl->ecosystem()) {
             Ecosystem::Php => self::application('php', 'php'),
             Ecosystem::Composer, Ecosystem::Npm, Ecosystem::Unknown => null,
         };

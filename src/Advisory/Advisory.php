@@ -14,18 +14,22 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Advisory;
 
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Version\AffectedVersions;
 
 final readonly class Advisory
 {
+    public Ecosystem $ecosystem;
+
+    public string $packageName;
+
     /**
      * @param list<AdvisoryReference> $references every feed that reported this
      * @param string $firstPatchedVersion lowest fix on any branch, for display only; see AdvisoryMatcher::fixedVersionFor()
      */
     public function __construct(
         public string $advisoryId,
-        public string $packageName,
-        public Ecosystem $ecosystem,
+        public PackageUrl $package,
         public string $title,
         public string $link,
         public string $cve,
@@ -35,10 +39,6 @@ final readonly class Advisory
         public array $references,
         public string $firstPatchedVersion = '',
     ) {
-        if (trim($packageName) === '') {
-            throw new \InvalidArgumentException('An advisory has to name the package it is filed under.');
-        }
-
         if (!self::isSafeLink($link)) {
             throw new \InvalidArgumentException('An advisory link has to be an http(s) URL or empty.');
         }
@@ -52,6 +52,9 @@ final readonly class Advisory
                 throw new \InvalidArgumentException('An advisory reference has to be an AdvisoryReference.');
             }
         }
+
+        $this->ecosystem = $package->ecosystem();
+        $this->packageName = $package->packageName();
     }
 
     public static function isSafeLink(string $link): bool

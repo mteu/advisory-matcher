@@ -90,8 +90,7 @@ final readonly class AdvisoryDeduplicator
     {
         return new Advisory(
             advisoryId: $held->advisoryId,
-            packageName: $held->packageName,
-            ecosystem: $held->ecosystem,
+            package: $held->package,
             title: $held->title,
             link: $held->link,
             cve: $held->hasCve() ? $held->cve : $other->cve,

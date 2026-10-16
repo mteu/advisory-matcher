@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Tests\Unit\Source;
 
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\AdvisoryBatch;
 use mteu\AdvisoryMatcher\Source\AdvisorySource;
 use mteu\AdvisoryMatcher\Source\CompositeAdvisorySource;
@@ -58,9 +59,9 @@ final class FrameworkFreeContractTest extends TestCase
     #[Test]
     public function aFanOutOverTwoSourcesComposesWithNoContainer(): void
     {
-        $composerPackage = new PackageRef(Ecosystem::Composer, 'vendor/one', '1.0.0');
-        $npmPackage = new PackageRef(Ecosystem::Npm, 'lodash', '4.17.20');
-        $uncoveredPackage = new PackageRef(Ecosystem::Unknown, 'requests', '2.31.0');
+        $composerPackage = new PackageRef(PackageUrl::fromPackageName('composer', 'vendor/one'), '1.0.0');
+        $npmPackage = new PackageRef(PackageUrl::fromPackageName('npm', 'lodash'), '4.17.20');
+        $uncoveredPackage = new PackageRef(PackageUrl::fromPackageName('pypi', 'requests'), '2.31.0');
 
         $packages = [$composerPackage, $npmPackage, $uncoveredPackage];
 
@@ -87,8 +88,8 @@ final class FrameworkFreeContractTest extends TestCase
     #[Test]
     public function oneSourceFailingLeavesTheOtherSourcesCoverageIntact(): void
     {
-        $composerPackage = new PackageRef(Ecosystem::Composer, 'vendor/one', '1.0.0');
-        $npmPackage = new PackageRef(Ecosystem::Npm, 'lodash', '4.17.20');
+        $composerPackage = new PackageRef(PackageUrl::fromPackageName('composer', 'vendor/one'), '1.0.0');
+        $npmPackage = new PackageRef(PackageUrl::fromPackageName('npm', 'lodash'), '4.17.20');
         $packages = [$composerPackage, $npmPackage];
 
         $working = new StubAdvisorySource(
@@ -124,7 +125,7 @@ final class FrameworkFreeContractTest extends TestCase
     #[Test]
     public function aSourceIsOnlyAskedAboutWhatItIsGiven(): void
     {
-        $packages = [new PackageRef(Ecosystem::Composer, 'vendor/one', '1.0.0')];
+        $packages = [new PackageRef(PackageUrl::fromPackageName('composer', 'vendor/one'), '1.0.0')];
 
         $source = new StubAdvisorySource('Packagist', [Ecosystem::Composer]);
         $source->advisoriesFor($packages);
@@ -142,7 +143,7 @@ final class FrameworkFreeContractTest extends TestCase
 
         $source = new PackagistAdvisorySource($http, $factory, $factory);
 
-        $package = new PackageRef(Ecosystem::Composer, 'monolog/monolog', '1.10.0');
+        $package = new PackageRef(PackageUrl::fromPackageName('composer', 'monolog/monolog'), '1.10.0');
         $batch = $source->advisoriesFor([$package]);
 
         self::assertTrue($batch->isComplete());
@@ -155,7 +156,7 @@ final class FrameworkFreeContractTest extends TestCase
     public function twoRealSourcesWithOverlappingCoverageComposeWithNoContainer(): void
     {
         $factory = new Psr17Factory();
-        $package = new PackageRef(Ecosystem::Composer, 'monolog/monolog', '1.10.0');
+        $package = new PackageRef(PackageUrl::fromPackageName('composer', 'monolog/monolog'), '1.10.0');
 
         $packagist = new PackagistAdvisorySource(new RecordingHttpClient([new Response(503)]), $factory, $factory);
         $osv = new OsvAdvisorySource(
@@ -188,8 +189,8 @@ final class FrameworkFreeContractTest extends TestCase
     public function threeRealSourcesBehindOneCompositeWithPackagistDown(): void
     {
         $factory = new Psr17Factory();
-        $monolog = new PackageRef(Ecosystem::Composer, 'monolog/monolog', '1.10.0');
-        $php = new PackageRef(Ecosystem::Php, 'php', '8.3.14');
+        $monolog = new PackageRef(PackageUrl::fromPackageName('composer', 'monolog/monolog'), '1.10.0');
+        $php = new PackageRef(PackageUrl::fromPackageName('generic', 'php'), '8.3.14');
 
         $packagistHttp = new RecordingHttpClient([new Response(503)]);
         $osvHttp = new RecordingHttpClient([
