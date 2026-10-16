@@ -86,7 +86,7 @@ final readonly class NvdApi
     {
         $query = http_build_query([
             'cpeName' => $cpeName,
-            // Valueless flags in NVD's grammar. Empty value is how they are spelled out in the query string.
+            // NVD takes these as valueless flags, spelled with an empty value in the query string.
             'isVulnerable' => '',
             'noRejected' => '',
             'resultsPerPage' => self::RESULTS_PER_PAGE,
@@ -142,7 +142,7 @@ final readonly class NvdApi
         try {
             $response = $this->httpClient->sendRequest($request);
         } catch (ClientExceptionInterface $exception) {
-            // The message only, not the exception: a PSR-18 exception carries the request, and the request carries the API key.
+            // The message only, because a PSR-18 exception carries the request and the request carries the API key.
             $this->logger->warning('NVD request failed.', ['message' => $exception->getMessage()]);
 
             return $this->failure(

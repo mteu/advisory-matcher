@@ -35,9 +35,8 @@ final readonly class AdvisoryDeduplicator
     }
 
     /**
-     * Matches on every identity an advisory answers to, not only its canonical
-     * one: OSV files a finding as `OSV-GHSA-…` and Packagist as `PKSA-…`, and a
-     * feed can add a CVE to either overnight.
+     * Matches on every identity of an advisory, not only the canonical one.
+     * OSV files a finding as `OSV-GHSA-…` and Packagist as `PKSA-…`.
      *
      * @param list<Advisory> $advisories
      * @return list<Advisory>
@@ -60,9 +59,7 @@ final readonly class AdvisoryDeduplicator
                 $folded[$position] = $this->merge($folded[$position], $advisory);
             }
 
-            // The surviving record now answers to these identities too, so a
-            // later report naming only the CVE still finds the entry that was
-            // first matched by its GHSA id.
+            // So a later report naming only the CVE still finds an entry first matched by its GHSA id.
             foreach ($identities as $identity) {
                 $positions[$identity] ??= $position;
             }

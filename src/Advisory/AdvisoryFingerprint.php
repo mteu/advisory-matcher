@@ -45,8 +45,7 @@ final class AdvisoryFingerprint
         }
 
         if ($identities === []) {
-            // Nothing names this advisory. Falling back to the empty id would collapse every of those advisories of a package
-            // into one, so derive a stable key from what the record actually says instead.
+            // An empty id would merge all unnamed advisories of a package, so key on the content.
             $identities[] = $package . '|hash|' . substr(
                 hash('sha256', $advisory->title . '|' . $advisory->affectedVersions->toComposerConstraint()),
                 0,
@@ -58,9 +57,7 @@ final class AdvisoryFingerprint
     }
 
     /**
-     * The identities a statement about these advisory ids on this package
-     * answers to, such as one read from a VEX document. A CVE or GHSA id is
-     * named as such, any other id as a feed's own.
+     * The identities that ids read from outside, such as a VEX document, answer to.
      *
      * @param list<string> $advisoryIds as written
      * @return list<string>
@@ -73,7 +70,7 @@ final class AdvisoryFingerprint
         foreach ($advisoryIds as $advisoryId) {
             $id = trim($advisoryId);
 
-            // A separator would make the identity name something else.
+            // A pipe would corrupt the key.
             if ($id === '' || str_contains($id, '|')) {
                 continue;
             }

@@ -31,9 +31,8 @@ final readonly class UserAgent
     {
         $value = trim($value);
 
-        // A line break would end the header and start another one of the
-        // consumer's choosing. Refused here, when the source is built, rather
-        // than by the PSR-7 implementation on the first request.
+        // A line break would end the header and let the consumer start another.
+        // Refused when the source is built, not on the first request.
         if (preg_match('/^[\x20-\x7E]*$/', $value) !== 1) {
             throw new \InvalidArgumentException('A User-Agent must be printable ASCII, without line breaks or other control characters.');
         }

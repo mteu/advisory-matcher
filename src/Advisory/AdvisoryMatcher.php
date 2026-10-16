@@ -71,8 +71,7 @@ final readonly class AdvisoryMatcher
         try {
             return $this->resultOf($this->strict->satisfies($version, $affected->toComposerConstraint()));
         } catch (\UnexpectedValueException) {
-            // Composer could not read one side. Only Composer and PHP versions
-            // are close enough to Composer's rules for the lenient fallback.
+            // Only Composer and PHP versions are close enough to Composer's rules for the lenient fallback.
         }
 
         if (!in_array($ecosystem, [Ecosystem::Composer, Ecosystem::Php], true)

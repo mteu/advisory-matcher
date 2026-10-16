@@ -18,7 +18,7 @@ use mteu\AdvisoryMatcher\Package\Ecosystem;
 final readonly class SourceFailure
 {
     /**
-     * @param string $detail for logs only; match on $reason
+     * @param string $detail for logs only. Match on $reason
      * @param int|null $retryAfterSeconds the feed's Retry-After
      */
     public function __construct(

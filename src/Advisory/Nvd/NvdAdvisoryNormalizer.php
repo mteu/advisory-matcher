@@ -50,7 +50,7 @@ final readonly class NvdAdvisoryNormalizer
 
     /**
      * @param array<string, mixed> $cve the `cve` object of one NVD `vulnerabilities` entry
-     * @param string $installedRelease picks which of a multi-branch CVE's fixes is the upgrade target; '' names the lowest
+     * @param string $installedRelease picks the upgrade target among the fixes of a multi-branch CVE, '' picks the lowest
      */
     public function normalize(
         array $cve,
@@ -173,7 +173,7 @@ final readonly class NvdAdvisoryNormalizer
             return $range;
         }
 
-        // No bounds: One exact release, or `*`/`-` for every release there is.
+        // No bounds means one exact release, or every release for `*` and `-`.
         $version = explode(':', $cpeMatch['criteria'])[5] ?? '';
 
         return in_array($version, ['', '*', '-'], true) ? new VersionRange() : VersionRange::exactly($version);
@@ -228,7 +228,7 @@ final readonly class NvdAdvisoryNormalizer
         $descriptions = $cve['descriptions'] ?? null;
 
         foreach (is_array($descriptions) ? $descriptions : [] as $description) {
-            // NVD carries the same text in several languages. Let's take the English one.
+            // NVD lists each text in several languages, so take the English one.
             if (!is_array($description)
                 || ($description['lang'] ?? null) !== 'en'
                 || !is_string($description['value'] ?? null)
