@@ -6,6 +6,8 @@ parameters:
 		# its own tree, so neither is on its autoloader.
 		- ../../.build/vendor/psr
 		- ../../.build/vendor/nyholm/psr7/src
+		# The purl parser PackageUrl validates with.
+		- ../../.build/vendor/package-url/packageurl-php/src
 	paths:
 		- ../../src
 		- ../../tests/Unit
