@@ -45,7 +45,7 @@ use mteu\AdvisoryMatcher\Source\Packagist\PackagistAdvisorySource;
 use mteu\AdvisoryMatcher\Source\Osv\OsvAdvisorySource;
 
 // $httpClient: Psr\Http\Client\ClientInterface (set timeouts on it)
-// $factory: An object implementing the PSR-17 request and stream factories
+// $factory: an object implementing the PSR-17 request and stream factories
 // $cache: Psr\SimpleCache\CacheInterface
 $source = new CompositeAdvisorySource([
     new CachingAdvisorySource(new PackagistAdvisorySource($httpClient, $factory, $factory), $cache),
@@ -53,27 +53,42 @@ $source = new CompositeAdvisorySource([
 ]);
 $matcher = new AdvisoryMatcher();
 
+// Feed text can carry terminal control sequences.
+$plain = static fn (string $text): string => preg_replace('/\p{Cc}/u', '', $text) ?? '?';
+
 $packages = [
     new PackageRef(Ecosystem::Composer, 'symfony/http-kernel', '5.4.19'),
     new PackageRef(Ecosystem::Npm, 'lodash', '4.17.20'),
 ];
 $batch = $source->advisoriesFor($packages);
 
+// A package can be answered by one source while another source failed for it.
+foreach ($batch->failures as $failure) {
+    printf("%s failed for %s: %s\n", $failure->sourceName, $failure->ecosystem->getDisplayName(), $failure->reason->value);
+}
+
 foreach ($packages as $package) {
     if (!$batch->wasAnsweredFor($package)) {
-        printf("%s: not checked\n", $package->name); // unknown
+        printf("%s: not checked, treat as unknown\n", $package->name);
         continue;
     }
 
     $matches = $matcher->matchAll($batch->advisoriesFor($package), $package->version);
 
     foreach ($matches->affected as $advisory) {
+        $id = $advisory->hasCve() ? $advisory->cve : $advisory->advisoryId;
         $fix = $matcher->fixedVersionFor($advisory, $package->version);
-        printf("%s: %s %s, fixed in %s\n", $package->name, $advisory->severity->value, $advisory->cve, $fix ?: 'no release yet');
+        printf(
+            "%s: %s %s, %s\n",
+            $package->name,
+            $advisory->severity->value,
+            $plain($id),
+            $fix !== '' ? 'fixed in ' . $fix : 'no fix known',
+        );
     }
 
     foreach ($matches->undetermined as $advisory) {
-        printf("%s: %s, could not tell\n", $package->name, $advisory->advisoryId);
+        printf("%s: %s, could not tell\n", $package->name, $plain($advisory->advisoryId));
     }
 }
 ```
