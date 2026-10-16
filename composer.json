@@ -1,7 +1,7 @@
 {
 	"name": "mteu/advisory-matcher",
 	"description": "PHP library for matching installed packages against security advisories from Packagist, OSV and NVD",
-	"license": "GPL-2.0-or-later",
+	"license": "MIT",
 	"type": "library",
 	"keywords": [
 		"security",

@@ -124,7 +124,7 @@ vulnerability in this library.
 
 ## ⭐ License
 
-This library is licensed under the [GPL-2.0-or-later](LICENSE.md) license.
+This library is licensed under the [MIT](LICENSE.md) license.
 
 ## 💬 Support
 
