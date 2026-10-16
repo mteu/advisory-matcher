@@ -27,7 +27,7 @@ final class CpeIdentityTest extends TestCase
     #[Test]
     public function thePhpRuntimeResolvesToTheInterpretersOfficialCpe(): void
     {
-        $identity = CpeIdentity::forComponent('php');
+        $identity = CpeIdentity::forPackage(PackageUrl::fromString('pkg:generic/php'));
 
         self::assertInstanceOf(CpeIdentity::class, $identity);
         self::assertSame('a', $identity->part);
@@ -35,20 +35,23 @@ final class CpeIdentityTest extends TestCase
         self::assertSame('php', $identity->product);
     }
 
-    #[Test]
-    public function theRuntimesInventoryNameAndExtensionKeyBothResolveWhateverTheirCase(): void
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function packagesWithoutAKnownCpe(): iterable
     {
-        self::assertInstanceOf(CpeIdentity::class, CpeIdentity::forComponent('php-runtime'));
-        self::assertInstanceOf(CpeIdentity::class, CpeIdentity::forComponent(' PHP '));
+        yield 'a Composer package' => ['pkg:composer/typo3/cms-core'];
+        yield 'a Composer package named like the runtime' => ['pkg:composer/php/php'];
+        yield 'another runtime' => ['pkg:generic/php-fpm'];
+        yield 'another generic package' => ['pkg:generic/openssl'];
+        yield 'the runtime under a type the specification does not register' => ['pkg:php/php'];
     }
 
     #[Test]
-    public function anUnknownComponentResolvesToNoCpe(): void
+    #[DataProvider('packagesWithoutAKnownCpe')]
+    public function aPackageNoCpeIsKnownForResolvesToNone(string $purl): void
     {
-        self::assertNull(CpeIdentity::forComponent('typo3/cms-core'));
-        self::assertNull(CpeIdentity::forComponent('php-fpm'));
-        self::assertNull(CpeIdentity::forComponent('openssl'));
-        self::assertNull(CpeIdentity::forComponent(''));
+        self::assertNull(CpeIdentity::forPackage(PackageUrl::fromString($purl)));
     }
 
     #[Test]

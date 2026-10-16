@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Tests\Unit\Advisory\Osv;
 
 use mteu\AdvisoryMatcher\Advisory\Advisory;
+use mteu\AdvisoryMatcher\Tests\Unit\Advisory\AdvisoryBuilder;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryMatcher;
 use mteu\AdvisoryMatcher\Advisory\MatchResult;
 use mteu\AdvisoryMatcher\Advisory\Osv\OsvAdvisoryNormalizer;
@@ -51,8 +53,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
                 'references' => [['url' => 'https://example.invalid/advisory']],
                 'database_specific' => ['severity' => 'HIGH'],
             ],
-            'acme/widget',
-            Ecosystem::Npm,
+            PackageUrl::fromPackageName('npm', 'acme/widget'),
             ['ranges' => [['events' => [['introduced' => '1.0.0'], ['fixed' => '1.6.0']]]]],
         );
 
@@ -242,7 +243,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
             $vulnerability['severity'] = $severityEntries;
         }
 
-        $advisory = $this->normalizer->normalize($vulnerability, 'acme/widget', Ecosystem::Npm, []);
+        $advisory = $this->normalizer->normalize($vulnerability, PackageUrl::fromPackageName('npm', 'acme/widget'), []);
 
         self::assertSame($expected, $advisory->severity);
     }
@@ -319,7 +320,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
             $vulnerability['references'] = $references;
         }
 
-        $advisory = $this->normalizer->normalize($vulnerability, 'acme/widget', Ecosystem::Npm, []);
+        $advisory = $this->normalizer->normalize($vulnerability, PackageUrl::fromPackageName('npm', 'acme/widget'), []);
 
         self::assertSame($expected, $advisory->link);
     }
@@ -371,7 +372,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
 
         self::assertSame(
             $expected,
-            $this->normalizer->normalize($vulnerability, 'acme/widget', Ecosystem::Npm, [])->title,
+            $this->normalizer->normalize($vulnerability, PackageUrl::fromPackageName('npm', 'acme/widget'), [])->title,
         );
     }
 
@@ -398,7 +399,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
 
         self::assertSame(
             $expected,
-            $this->normalizer->normalize($vulnerability, 'acme/widget', Ecosystem::Npm, [])->cve,
+            $this->normalizer->normalize($vulnerability, PackageUrl::fromPackageName('npm', 'acme/widget'), [])->cve,
         );
     }
 
@@ -422,7 +423,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
                 $vulnerability['published'] = $published;
             }
 
-            $advisory = $this->normalizer->normalize($vulnerability, 'acme/widget', Ecosystem::Npm, []);
+            $advisory = $this->normalizer->normalize($vulnerability, PackageUrl::fromPackageName('npm', 'acme/widget'), []);
 
             self::assertSame(
                 self::FROZEN_NOW,
@@ -435,7 +436,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
     #[Test]
     public function namesTheRecordEvenWhenItCarriesNoId(): void
     {
-        $advisory = $this->normalizer->normalize([], 'acme/widget', Ecosystem::Npm, []);
+        $advisory = $this->normalizer->normalize([], PackageUrl::fromPackageName('npm', 'acme/widget'), []);
 
         self::assertSame('OSV-OSV-unknown', $advisory->advisoryId);
     }
@@ -454,8 +455,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
                 'database_specific' => 'high',
                 'severity' => 'critical',
             ],
-            'acme/widget',
-            Ecosystem::Npm,
+            PackageUrl::fromPackageName('npm', 'acme/widget'),
             ['ranges' => 'not an array'],
         );
 
@@ -472,7 +472,7 @@ final class OsvAdvisoryNormalizerTest extends TestCase
     #[DataProvider('ecosystemProvider')]
     public function filesTheAdvisoryUnderTheEcosystemItWasAskedFor(Ecosystem $ecosystem): void
     {
-        $advisory = $this->normalizer->normalize(['id' => 'OSV-1'], 'acme/widget', $ecosystem, []);
+        $advisory = $this->normalizer->normalize(['id' => 'OSV-1'], AdvisoryBuilder::packageUrlOf($ecosystem, 'acme/widget'), []);
 
         self::assertSame($ecosystem, $advisory->ecosystem);
     }
@@ -491,6 +491,6 @@ final class OsvAdvisoryNormalizerTest extends TestCase
      */
     private function normalize(array $affected): Advisory
     {
-        return $this->normalizer->normalize(['id' => 'OSV-1'], 'acme/widget', Ecosystem::Npm, $affected);
+        return $this->normalizer->normalize(['id' => 'OSV-1'], PackageUrl::fromPackageName('npm', 'acme/widget'), $affected);
     }
 }

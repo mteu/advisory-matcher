@@ -17,6 +17,7 @@ use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
 use mteu\AdvisoryMatcher\Advisory\Severity;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Version\AffectedVersions;
 
 final class AdvisoryBuilder
@@ -40,8 +41,7 @@ final class AdvisoryBuilder
     ): Advisory {
         return new Advisory(
             advisoryId: $advisoryId,
-            packageName: $packageName,
-            ecosystem: $ecosystem,
+            package: self::packageUrlOf($ecosystem, $packageName),
             title: $title,
             link: $link,
             cve: $cve,
@@ -51,5 +51,18 @@ final class AdvisoryBuilder
             references: $remoteId === '' ? $references : [...$references, new AdvisoryReference('GitHub', $remoteId)],
             firstPatchedVersion: $firstPatchedVersion,
         );
+    }
+
+    /**
+     * @param string $packageName ignored for the PHP runtime, which has one name only
+     */
+    public static function packageUrlOf(Ecosystem $ecosystem, string $packageName): PackageUrl
+    {
+        return match ($ecosystem) {
+            Ecosystem::Composer => PackageUrl::fromPackageName('composer', $packageName),
+            Ecosystem::Npm => PackageUrl::fromPackageName('npm', $packageName),
+            Ecosystem::Php => PackageUrl::fromString('pkg:generic/php'),
+            Ecosystem::Unknown => PackageUrl::fromPackageName('pypi', $packageName),
+        };
     }
 }

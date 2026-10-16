@@ -15,6 +15,7 @@ namespace mteu\AdvisoryMatcher\Tests\Unit\Source;
 
 use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\AdvisoryBatch;
 use mteu\AdvisoryMatcher\Source\AnsweredPackage;
 use mteu\AdvisoryMatcher\Source\FailureReason;
@@ -67,7 +68,7 @@ final class AdvisoryBatchTest extends TestCase
         self::assertTrue($batch->wasAnsweredFor($this->package('vendor/one', '1.0.0')));
         self::assertFalse($batch->wasAnsweredFor($this->package('vendor/one', '1.0.1')));
         self::assertFalse(
-            $batch->wasAnsweredFor(new PackageRef(Ecosystem::Npm, 'vendor/one', '1.0.0')),
+            $batch->wasAnsweredFor(new PackageRef(PackageUrl::fromPackageName('npm', 'vendor/one'), '1.0.0')),
         );
     }
 
@@ -139,8 +140,8 @@ final class AdvisoryBatchTest extends TestCase
     #[Test]
     public function advisoriesAreFiledUnderTheEcosystemAsWellAsTheName(): void
     {
-        $npm = new PackageRef(Ecosystem::Npm, 'debug', '2.6.8');
-        $composer = new PackageRef(Ecosystem::Composer, 'debug', '0.3');
+        $npm = new PackageRef(PackageUrl::fromPackageName('npm', 'debug'), '2.6.8');
+        $composer = new PackageRef(PackageUrl::fromPackageName('composer', 'debug'), '0.3');
         $npmAdvisory = AdvisoryBuilder::build(packageName: 'debug', ecosystem: Ecosystem::Npm, cve: 'CVE-2017-16137');
         $batch = new AdvisoryBatch(answeredFor: [
             new AnsweredPackage($npm, advisories: [$npmAdvisory]),
@@ -206,8 +207,8 @@ final class AdvisoryBatchTest extends TestCase
     #[Test]
     public function twoVersionsOfOnePackageKeepTheirOwnAdvisories(): void
     {
-        $newer = new PackageRef(Ecosystem::Php, 'php', '8.3.14');
-        $older = new PackageRef(Ecosystem::Php, 'php', '8.2.10');
+        $newer = new PackageRef(PackageUrl::fromPackageName('generic', 'php'), '8.3.14');
+        $older = new PackageRef(PackageUrl::fromPackageName('generic', 'php'), '8.2.10');
         $forNewer = AdvisoryBuilder::build(
             advisoryId: 'NVD-CVE-2026-0001',
             packageName: 'php',
@@ -274,7 +275,7 @@ final class AdvisoryBatchTest extends TestCase
 
     private function package(string $name, string $version = '1.0.0'): PackageRef
     {
-        return new PackageRef(Ecosystem::Composer, $name, $version);
+        return new PackageRef(PackageUrl::fromPackageName('composer', $name), $version);
     }
 
     private function failure(string $sourceName = 'Packagist'): SourceFailure

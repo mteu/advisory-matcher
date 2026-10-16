@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Source\Osv;
 
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\PackageRef;
 
 /**
@@ -47,6 +48,11 @@ final readonly class OsvQuery
                 sprintf('OSV has no ecosystem for "%s".', $ecosystem->value),
             ),
         };
+    }
+
+    public function package(): PackageUrl
+    {
+        return $this->packages[0]->package;
     }
 
     public function label(): string

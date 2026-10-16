@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace mteu\AdvisoryMatcher\Advisory;
 
+use mteu\AdvisoryMatcher\Package\PackageUrl;
+
 final class AdvisoryFingerprint
 {
     public static function canonical(Advisory $advisory): string
@@ -26,7 +28,7 @@ final class AdvisoryFingerprint
     public static function identitiesOf(Advisory $advisory): array
     {
         $identities = [];
-        $package = $advisory->ecosystem->value . '|' . $advisory->packageName;
+        $package = self::packageKeyOf($advisory->package);
 
         $cve = strtoupper(trim($advisory->cve));
         if ($cve !== '') {
@@ -53,6 +55,43 @@ final class AdvisoryFingerprint
         }
 
         return $identities;
+    }
+
+    /**
+     * The identities a statement about these advisory ids on this package
+     * answers to, such as one read from a VEX document. A CVE or GHSA id is
+     * named as such, any other id as a feed's own.
+     *
+     * @param list<string> $advisoryIds as written
+     * @return list<string>
+     */
+    public static function identitiesNaming(PackageUrl $package, array $advisoryIds): array
+    {
+        $prefix = self::packageKeyOf($package) . '|';
+        $identities = [];
+
+        foreach ($advisoryIds as $advisoryId) {
+            $id = trim($advisoryId);
+
+            // A separator would make the identity name something else.
+            if ($id === '' || str_contains($id, '|')) {
+                continue;
+            }
+
+            $upperCased = strtoupper($id);
+            $identities[] = $prefix . match (true) {
+                str_starts_with($upperCased, 'CVE-') => 'cve|' . $upperCased,
+                str_starts_with($upperCased, 'GHSA-') => 'ghsa|' . $upperCased,
+                default => 'id|' . $id,
+            };
+        }
+
+        return array_values(array_unique($identities));
+    }
+
+    private static function packageKeyOf(PackageUrl $package): string
+    {
+        return $package->ecosystem()->value . '|' . $package->packageName();
     }
 
     /**

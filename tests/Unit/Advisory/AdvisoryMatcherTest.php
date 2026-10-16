@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Tests\Unit\Advisory;
 
 use mteu\AdvisoryMatcher\Advisory\Advisory;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryMatcher;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryMatches;
 use mteu\AdvisoryMatcher\Advisory\MatchResult;
@@ -278,8 +279,7 @@ final class AdvisoryMatcherTest extends TestCase
     {
         $advisory = new Advisory(
             advisoryId: 'GHSA-xxxx',
-            packageName: 'vendor/package',
-            ecosystem: Ecosystem::Composer,
+            package: PackageUrl::fromPackageName('composer', 'vendor/package'),
             title: 'A vulnerability',
             link: '',
             cve: '',

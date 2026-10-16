@@ -17,6 +17,7 @@ use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
 use mteu\AdvisoryMatcher\Advisory\Severity;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\AdvisoryBatch;
 use mteu\AdvisoryMatcher\Source\AdvisoryDeduplicator;
 use mteu\AdvisoryMatcher\Source\AnsweredPackage;
@@ -378,8 +379,8 @@ final class AdvisoryDeduplicatorTest extends TestCase
             affectedVersions: '>=5.0,<5.1',
         );
 
-        $merged = $this->deduplicator->deduplicate($this->batchAnswering(new PackageRef(Ecosystem::Npm, 'x', '1.1'), $npm)
-            ->merge($this->batchAnswering(new PackageRef(Ecosystem::Composer, 'x', '5.0'), $composer)));
+        $merged = $this->deduplicator->deduplicate($this->batchAnswering(new PackageRef(PackageUrl::fromPackageName('npm', 'x'), '1.1'), $npm)
+            ->merge($this->batchAnswering(new PackageRef(PackageUrl::fromPackageName('composer', 'x'), '5.0'), $composer)));
 
         self::assertSame([$npm, $composer], $merged->advisories);
     }
@@ -401,6 +402,6 @@ final class AdvisoryDeduplicatorTest extends TestCase
 
     private function package(string $name): PackageRef
     {
-        return new PackageRef(Ecosystem::Composer, $name, '1.0.0');
+        return new PackageRef(PackageUrl::fromPackageName('composer', $name), '1.0.0');
     }
 }

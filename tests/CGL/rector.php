@@ -17,11 +17,12 @@ return RectorConfig::configure()
     ->withPaths([
         dirname(__DIR__, 2) . '/src',
     ])
-    // The PSR interfaces the sources speak live in the project's own tree,
-    // which is not on this toolchain's autoloader. Without them every PSR
-    // return type reads as mixed.
+    // The PSR interfaces the sources speak and the package URL parser live in
+    // the project's own tree, which is not on this toolchain's autoloader.
+    // Without them every type they return reads as mixed.
     ->withAutoloadPaths([
         dirname(__DIR__, 2) . '/.build/vendor/psr',
+        dirname(__DIR__, 2) . '/.build/vendor/package-url/packageurl-php/src',
     ])
     ->withPhpSets(php83: true)
     ->withTypeCoverageLevel(0)

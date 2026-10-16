@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mteu\AdvisoryMatcher\Tests\Unit\Advisory\Packagist;
 
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
+use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Advisory\Packagist\PackagistAdvisoryNormalizer;
 use mteu\AdvisoryMatcher\Advisory\Severity;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
@@ -56,7 +57,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
                     ['name' => 'FriendsOfPHP/security-advisories', 'remoteId' => 'monolog/monolog/2014-12-29-1.yaml'],
                 ],
             ],
-            'monolog/monolog',
+            PackageUrl::fromPackageName('composer', 'monolog/monolog'),
         );
 
         self::assertSame('PKSA-dmw8-jd8k-q3c6', $advisory->advisoryId);
@@ -79,14 +80,14 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
     }
 
     #[Test]
-    public function filesTheAdvisoryUnderTheRequestedSpelling(): void
+    public function filesTheAdvisoryUnderTheLowercasedComposerName(): void
     {
         $advisory = $this->normalizer->normalize(
             ['advisoryId' => 'PKSA-1', 'packageName' => 'phpmailer/phpmailer'],
-            'PHPMailer/PHPMailer',
+            PackageUrl::fromPackageName('composer', 'PHPMailer/PHPMailer'),
         );
 
-        self::assertSame('PHPMailer/PHPMailer', $advisory->packageName);
+        self::assertSame('phpmailer/phpmailer', $advisory->packageName);
     }
 
     /**
@@ -108,7 +109,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
     {
         $advisory = $this->normalizer->normalize(
             ['advisoryId' => 'PKSA-1', 'link' => 'http://example.com/advisory'],
-            'vendor/package',
+            PackageUrl::fromPackageName('composer', 'vendor/package'),
         );
 
         self::assertSame('http://example.com/advisory', $advisory->link);
@@ -118,7 +119,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
     #[DataProvider('linksThatMustNotBecomeALinkTarget')]
     public function dropsALinkThatIsNotHttp(string $link): void
     {
-        $advisory = $this->normalizer->normalize(['advisoryId' => 'PKSA-1', 'link' => $link], 'vendor/package');
+        $advisory = $this->normalizer->normalize(['advisoryId' => 'PKSA-1', 'link' => $link], PackageUrl::fromPackageName('composer', 'vendor/package'));
 
         self::assertSame('', $advisory->link);
     }
@@ -126,7 +127,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
     #[Test]
     public function aRecordMissingEverythingStillBecomesAnAdvisory(): void
     {
-        $advisory = $this->normalizer->normalize(['advisoryId' => 'PKSA-1'], 'vendor/package');
+        $advisory = $this->normalizer->normalize(['advisoryId' => 'PKSA-1'], PackageUrl::fromPackageName('composer', 'vendor/package'));
 
         self::assertSame('', $advisory->title);
         self::assertSame('', $advisory->affectedVersions->toComposerConstraint());
@@ -141,7 +142,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
     {
         $advisory = $this->normalizer->normalize(
             ['advisoryId' => 'PKSA-1', 'reportedAt' => 'sometime last spring'],
-            'vendor/package',
+            PackageUrl::fromPackageName('composer', 'vendor/package'),
         );
 
         self::assertSame(self::FROZEN_NOW, $advisory->reportedAt->format(\DateTimeInterface::ATOM));
@@ -152,7 +153,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
     {
         $advisory = $this->normalizer->normalize(
             ['advisoryId' => 'PKSA-1', 'reportedAt' => '2024-02-02T20:43:57+00:00'],
-            'vendor/package',
+            PackageUrl::fromPackageName('composer', 'vendor/package'),
         );
 
         self::assertSame('2024-02-02T20:43:57+00:00', $advisory->reportedAt->format(\DateTimeInterface::ATOM));
@@ -170,7 +171,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
                     ['name' => 'GitHub', 'remoteId' => 'GHSA-aaaa-bbbb-cccc'],
                 ],
             ],
-            'vendor/package',
+            PackageUrl::fromPackageName('composer', 'vendor/package'),
         );
 
         self::assertEquals([new AdvisoryReference('GitHub', 'GHSA-aaaa-bbbb-cccc')], $advisory->references);
@@ -181,7 +182,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
     {
         $advisory = $this->normalizer->normalize(
             ['advisoryId' => 'PKSA-1', 'source' => 'GitHub', 'remoteId' => 'GHSA-aaaa-bbbb-cccc'],
-            'vendor/package',
+            PackageUrl::fromPackageName('composer', 'vendor/package'),
         );
 
         self::assertEquals([new AdvisoryReference('GitHub', 'GHSA-aaaa-bbbb-cccc')], $advisory->references);
@@ -200,7 +201,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
                     ['name' => 'FriendsOfPHP/security-advisories', 'remoteId' => 'vendor/package/2026-01-01.yaml'],
                 ],
             ],
-            'vendor/package',
+            PackageUrl::fromPackageName('composer', 'vendor/package'),
         );
 
         self::assertEquals(
@@ -218,7 +219,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
     {
         $advisory = $this->normalizer->normalize(
             ['advisoryId' => 'PKSA-1', 'affectedVersions' => $constraint],
-            'vendor/package',
+            PackageUrl::fromPackageName('composer', 'vendor/package'),
         );
 
         self::assertTrue($advisory->affectedVersions->isEmpty());
@@ -256,7 +257,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
     {
         $advisory = $this->normalizer->normalize(
             ['advisoryId' => 'PKSA-1', 'affectedVersions' => $constraint],
-            'vendor/package',
+            PackageUrl::fromPackageName('composer', 'vendor/package'),
         );
 
         self::assertSame($expected, $advisory->firstPatchedVersion);
@@ -280,7 +281,7 @@ final class PackagistAdvisoryNormalizerTest extends TestCase
     #[DataProvider('severityLabels')]
     public function readsTheSeverityLabel(mixed $label, Severity $expected): void
     {
-        $advisory = $this->normalizer->normalize(['advisoryId' => 'PKSA-1', 'severity' => $label], 'vendor/package');
+        $advisory = $this->normalizer->normalize(['advisoryId' => 'PKSA-1', 'severity' => $label], PackageUrl::fromPackageName('composer', 'vendor/package'));
 
         self::assertSame($expected, $advisory->severity);
     }

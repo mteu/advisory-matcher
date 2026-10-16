@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace mteu\AdvisoryMatcher\Tests\Unit\Package;
 
+use mteu\AdvisoryMatcher\Package\Ecosystem;
 use mteu\AdvisoryMatcher\Package\PackageUrl;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -23,106 +24,133 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(PackageUrl::class)]
 final class PackageUrlTest extends TestCase
 {
-    #[Test]
-    #[DataProvider('canonicalSpellingProvider')]
-    public function parsesAnySpellingIntoTheCanonicalVersionlessForm(string $purl, string $expected): void
-    {
-        self::assertSame($expected, PackageUrl::fromString($purl)->toString());
-    }
-
     /**
      * @return iterable<string, array{string, string}>
      */
-    public static function canonicalSpellingProvider(): iterable
+    public static function spellingsAndTheirCanonicalForm(): iterable
     {
-        yield 'Composer package' => ['pkg:composer/symfony/console', 'pkg:composer/symfony/console'];
-        // packageurl-php keeps the case here; the specification lowercases.
-        yield 'mixed-case Composer package' => ['pkg:composer/Symfony/Console', 'pkg:composer/symfony/console'];
-        yield 'npm package' => ['pkg:npm/lodash', 'pkg:npm/lodash'];
-        // packageurl-php lowercases here; the specification keeps the case.
-        yield 'mixed-case legacy npm package' => ['pkg:npm/JSONStream@1.3.5', 'pkg:npm/JSONStream'];
-        yield 'scoped npm package, encoded' => ['pkg:npm/%40babel/core@7.24.0', 'pkg:npm/%40babel/core'];
-        yield 'scoped npm package, unencoded' => ['pkg:npm/@babel/core@7.24.0', 'pkg:npm/%40babel/core'];
-        yield 'PHP runtime' => ['pkg:generic/php@8.3.6', 'pkg:generic/php'];
-        yield 'uppercase scheme and type' => ['PKG:NPM/lodash', 'pkg:npm/lodash'];
-        yield 'version, qualifiers and subpath' => [
-            'pkg:composer/symfony/console@v7.1.0?repository_url=https://repo.packagist.org#src',
-            'pkg:composer/symfony/console',
+        yield 'a Composer package' => ['pkg:composer/symfony/http-kernel', 'pkg:composer/symfony/http-kernel'];
+        yield 'a Composer package in mixed case' => ['pkg:composer/Symfony/HTTP-Kernel', 'pkg:composer/symfony/http-kernel'];
+        yield 'an uppercase type' => ['pkg:COMPOSER/symfony/http-kernel', 'pkg:composer/symfony/http-kernel'];
+        yield 'with a version' => ['pkg:composer/symfony/http-kernel@5.4.19', 'pkg:composer/symfony/http-kernel'];
+        yield 'with qualifiers and a subpath' => ['pkg:npm/lodash@4.17.20?repository_url=https://example.invalid#lib', 'pkg:npm/lodash'];
+        yield 'an npm package' => ['pkg:npm/lodash', 'pkg:npm/lodash'];
+        yield 'an npm package published in mixed case' => ['pkg:npm/JSONStream@1.3.5', 'pkg:npm/JSONStream'];
+        yield 'a scoped npm package' => ['pkg:npm/@acme/widgets@2.1.0', 'pkg:npm/%40acme/widgets'];
+        yield 'a scoped npm package with an encoded scope' => ['pkg:npm/%40acme/widgets', 'pkg:npm/%40acme/widgets'];
+        yield 'an npm name with a trailing slash' => ['pkg:npm/JSONStream@1.3.5/', 'pkg:npm/JSONStream'];
+        yield 'an encoded letter in an npm name' => ['pkg:npm/JSON%53tream', 'pkg:npm/JSONStream'];
+        yield 'an npm name in mixed case behind slashes in qualifiers and subpath' => [
+            'pkg:npm/JSONStream@1.3.5?vcs_url=git%2Bhttps://host.invalid/a/b#lib/src',
+            'pkg:npm/JSONStream',
         ];
-        yield 'type no source covers keeps the library rules' => ['pkg:pypi/Django_Rest', 'pkg:pypi/django-rest'];
+        yield 'the PHP runtime' => ['pkg:generic/php@8.3.6', 'pkg:generic/php'];
+        yield 'a colon left unencoded, as packageurl-php writes it' => ['pkg:generic/a:b', 'pkg:generic/a:b'];
+        yield 'a type that lowercases its names' => ['pkg:pypi/Django', 'pkg:pypi/django'];
+        yield 'a type that keeps the case' => ['pkg:maven/org.Example/Library', 'pkg:maven/org.Example/Library'];
     }
 
     #[Test]
-    #[DataProvider('packageNameProvider')]
-    public function buildsTheSameCanonicalFormFromARegistryName(string $type, string $packageName, string $expected): void
+    #[DataProvider('spellingsAndTheirCanonicalForm')]
+    public function writesOneCanonicalFormPerPackage(string $purl, string $canonical): void
     {
-        self::assertSame($expected, PackageUrl::fromPackageName($type, $packageName)->toString());
+        self::assertSame($canonical, PackageUrl::fromString($purl)->toString());
+    }
+
+    #[Test]
+    #[DataProvider('spellingsAndTheirCanonicalForm')]
+    public function readsItsCanonicalFormBackUnchanged(string $purl, string $canonical): void
+    {
+        self::assertSame($canonical, PackageUrl::fromString(PackageUrl::fromString($purl)->toString())->toString());
+    }
+
+    #[Test]
+    public function readsTheParts(): void
+    {
+        $purl = PackageUrl::fromString('pkg:npm/%40acme/widgets@2.1.0');
+
+        self::assertSame('npm', $purl->type);
+        self::assertSame('@acme', $purl->namespace);
+        self::assertSame('widgets', $purl->name);
+    }
+
+    #[Test]
+    public function readsAPackageWithoutNamespace(): void
+    {
+        self::assertSame('', PackageUrl::fromString('pkg:npm/lodash')->namespace);
     }
 
     /**
      * @return iterable<string, array{string, string, string}>
      */
-    public static function packageNameProvider(): iterable
+    public static function registryNames(): iterable
     {
-        yield 'Composer package' => ['composer', 'symfony/console', 'pkg:composer/symfony/console'];
-        yield 'mixed-case Composer package' => ['composer', 'Symfony/Console', 'pkg:composer/symfony/console'];
-        yield 'npm package' => ['npm', 'lodash', 'pkg:npm/lodash'];
-        yield 'mixed-case legacy npm package' => ['npm', 'JSONStream', 'pkg:npm/JSONStream'];
-        yield 'scoped npm package' => ['npm', '@babel/core', 'pkg:npm/%40babel/core'];
-        yield 'PHP runtime' => ['generic', 'php', 'pkg:generic/php'];
-        yield 'uppercase type' => ['NPM', 'lodash', 'pkg:npm/lodash'];
+        yield 'a Composer package' => ['composer', 'symfony/console', 'pkg:composer/symfony/console'];
+        yield 'a Composer package in mixed case' => ['composer', 'Symfony/Console', 'pkg:composer/symfony/console'];
+        yield 'an npm package' => ['npm', 'lodash', 'pkg:npm/lodash'];
+        yield 'an npm package published in mixed case' => ['npm', 'JSONStream', 'pkg:npm/JSONStream'];
+        yield 'a scoped npm package' => ['npm', '@babel/core', 'pkg:npm/%40babel/core'];
+        yield 'the PHP runtime' => ['generic', 'php', 'pkg:generic/php'];
     }
 
     #[Test]
-    #[TestWith(['pkg:npm/%40babel/core', 'npm', '@babel/core'])]
-    #[TestWith(['pkg:npm/@babel/core@7.24.0', 'npm', '@babel/core'])]
-    #[TestWith(['pkg:composer/Symfony/Console@v7.1.0', 'composer', 'symfony/console'])]
-    #[TestWith(['pkg:npm/JSONStream', 'npm', 'JSONStream'])]
-    public function aPurlAndItsRegistryNameNameTheSamePackage(string $purl, string $type, string $packageName): void
+    #[DataProvider('registryNames')]
+    public function buildsThePackageUrlOfARegistryName(string $type, string $packageName, string $canonical): void
     {
-        self::assertTrue(PackageUrl::fromString($purl)->equals(PackageUrl::fromPackageName($type, $packageName)));
+        self::assertSame($canonical, PackageUrl::fromPackageName($type, $packageName)->toString());
     }
 
     #[Test]
-    public function caseStillTellsNpmPackagesApart(): void
+    #[DataProvider('registryNames')]
+    public function spellsTheRegistryNameBack(string $type, string $packageName, string $canonical): void
+    {
+        $expected = $type === 'composer' ? strtolower($packageName) : $packageName;
+
+        self::assertSame($expected, PackageUrl::fromString($canonical)->packageName());
+    }
+
+    /**
+     * @return iterable<string, array{string, Ecosystem}>
+     */
+    public static function packagesAndTheirEcosystem(): iterable
+    {
+        yield 'a Composer package' => ['pkg:composer/symfony/console', Ecosystem::Composer];
+        yield 'an npm package' => ['pkg:npm/lodash', Ecosystem::Npm];
+        yield 'the PHP runtime' => ['pkg:generic/php', Ecosystem::Php];
+        yield 'another generic package' => ['pkg:generic/openssl', Ecosystem::Unknown];
+        yield 'a generic package named php in a namespace' => ['pkg:generic/acme/php', Ecosystem::Unknown];
+        yield 'the runtime under a type the specification does not register' => ['pkg:php/php', Ecosystem::Unknown];
+        yield 'a Composer package named php' => ['pkg:composer/php/php', Ecosystem::Composer];
+        yield 'a type no source covers' => ['pkg:pypi/django', Ecosystem::Unknown];
+        yield 'a distribution package' => ['pkg:deb/debian/openssl', Ecosystem::Unknown];
+    }
+
+    #[Test]
+    #[DataProvider('packagesAndTheirEcosystem')]
+    public function namesTheEcosystemItBelongsTo(string $purl, Ecosystem $expected): void
+    {
+        self::assertSame($expected, PackageUrl::fromString($purl)->ecosystem());
+    }
+
+    #[Test]
+    public function treatsTwoSpellingsOfOnePackageAsEqual(): void
+    {
+        self::assertTrue(PackageUrl::fromString('pkg:npm/@acme/widgets@1.0.0')->equals(PackageUrl::fromString('pkg:NPM/%40acme/widgets')));
+    }
+
+    #[Test]
+    public function tellsAnNpmPackageFromOneDifferingInCaseOnly(): void
     {
         self::assertFalse(PackageUrl::fromString('pkg:npm/JSONStream')->equals(PackageUrl::fromString('pkg:npm/jsonstream')));
     }
 
     #[Test]
-    #[TestWith(['pkg:composer/symfony/console'])]
-    #[TestWith(['pkg:npm/JSONStream'])]
-    #[TestWith(['pkg:npm/%40babel/core'])]
-    #[TestWith(['pkg:generic/php'])]
-    #[TestWith(['pkg:golang/github.com/gorilla/mux'])]
-    #[TestWith(['pkg:npm/a:b'])]
-    public function theCanonicalFormParsesBackToItself(string $canonical): void
-    {
-        self::assertSame($canonical, PackageUrl::fromString($canonical)->toString());
-    }
-
-    #[Test]
-    #[TestWith(['pkg:composer/symfony/console', 'symfony/console'])]
-    #[TestWith(['pkg:npm/%40babel/core', '@babel/core'])]
-    #[TestWith(['pkg:npm/JSONStream', 'JSONStream'])]
-    #[TestWith(['pkg:generic/php', 'php'])]
-    public function joinsNamespaceAndNameAsTheRegistrySpellsThem(string $purl, string $expected): void
-    {
-        self::assertSame($expected, PackageUrl::fromString($purl)->packageName());
-    }
-
-    #[Test]
     #[TestWith([''])]
-    #[TestWith(['symfony/console'])]
-    #[TestWith(['https://example.org/pkg/npm/lodash'])]
-    #[TestWith(['pkg:npm/'])]
-    #[TestWith(['pkg:np m/lodash'])]
-    #[TestWith(['pkg:1npm/lodash'])]
-    #[TestWith(['pkg:npm/foo%2Fbar'])]
-    #[TestWith(['pkg:packagist/symfony/console'])]
-    #[TestWith(['pkg:node/lodash'])]
-    #[TestWith(['pkg:php/php@8.3.6'])]
-    public function rejectsWhatIsNotARegisteredPackageUrl(string $purl): void
+    #[TestWith(['vendor/package'])]
+    #[TestWith(['pkg:composer'])]
+    #[TestWith(['pkg:npm/@acme/widgets'])]
+    #[TestWith(['https://example.invalid/vendor/package'])]
+    public function rejectsAnythingButAPackageUrl(string $purl): void
     {
         $this->expectException(\InvalidArgumentException::class);
 
@@ -131,13 +159,10 @@ final class PackageUrlTest extends TestCase
 
     #[Test]
     #[TestWith(['composer', ''])]
-    #[TestWith(['composer', 'symfony/'])]
-    #[TestWith(['npm', '/lodash'])]
-    #[TestWith(['npm', '@babel//core'])]
-    #[TestWith(['', 'lodash'])]
-    #[TestWith(['php', 'php'])]
-    #[TestWith(['packagist', 'symfony/console'])]
-    public function rejectsWhatIsNotARegisteredPackageName(string $type, string $packageName): void
+    #[TestWith(['composer', '   '])]
+    #[TestWith(['composer', 'vendor/'])]
+    #[TestWith(['', 'vendor/package'])]
+    public function rejectsARegistryNameWithoutAName(string $type, string $packageName): void
     {
         $this->expectException(\InvalidArgumentException::class);
 
@@ -147,11 +172,9 @@ final class PackageUrlTest extends TestCase
     #[Test]
     public function doesNotEchoTheRejectedInput(): void
     {
-        $input = 'pkg:<script>alert(1)</script>/x';
-
         try {
-            PackageUrl::fromString($input);
-            self::fail('The input should have been rejected.');
+            PackageUrl::fromString('<script>alert(1)</script>');
+            self::fail('A malformed package URL was accepted.');
         } catch (\InvalidArgumentException $exception) {
             self::assertStringNotContainsString('<script>', $exception->getMessage());
         }

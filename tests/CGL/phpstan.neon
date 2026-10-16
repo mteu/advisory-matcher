@@ -1,10 +1,11 @@
 parameters:
 	scanDirectories:
 		- ../../.build/vendor/phpunit/phpunit/src
-		# The PSR interfaces the sources speak, and the PSR-7 implementation
-		# the tests build requests and responses with. This project resolves
-		# its own tree, so neither is on its autoloader.
+		# The PSR interfaces the sources speak, the package URL parser, and the
+		# PSR-7 implementation the tests build requests and responses with. This
+		# project resolves its own tree, so none is on its autoloader.
 		- ../../.build/vendor/psr
+		- ../../.build/vendor/package-url/packageurl-php/src
 		- ../../.build/vendor/nyholm/psr7/src
 		# The purl parser PackageUrl validates with.
 		- ../../.build/vendor/package-url/packageurl-php/src
