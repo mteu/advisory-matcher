@@ -14,6 +14,13 @@ any release.
 - [`Source\CompositeAdvisorySource`](../src/Source/CompositeAdvisorySource.php): asks several sources and merges the answers
 - [`Source\Cache\CachingAdvisorySource`](../src/Source/Cache/CachingAdvisorySource.php): caches answers of another source
 - [`Source\AdvisoryDeduplicator`](../src/Source/AdvisoryDeduplicator.php): folds reports of one vulnerability into one advisory
+- [`Source\SeverityEnrichingAdvisorySource`](../src/Source/SeverityEnrichingAdvisorySource.php): rates advisories a feed left `unknown` from their CVE record
+
+## Severity lookups
+
+- [`Source\SeverityLookup`](../src/Source/SeverityLookup.php): the interface every severity lookup implements
+- [`Source\Nvd\NvdSeverityLookup`](../src/Source/Nvd/NvdSeverityLookup.php): reads a CVE's severity from NVD
+- [`Source\Cache\CachingSeverityLookup`](../src/Source/Cache/CachingSeverityLookup.php): caches the severities of another lookup
 
 ## Questions and answers
 

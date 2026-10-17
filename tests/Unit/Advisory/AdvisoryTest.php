@@ -122,6 +122,28 @@ final class AdvisoryTest extends TestCase
         self::assertSame('composer|vendor/package|cve|CVE-2026-1234', $advisory->getFingerprint());
     }
 
+    #[Test]
+    public function withSeverityChangesTheSeverityAloneAndLeavesTheOriginalUntouched(): void
+    {
+        $fields = [
+            'advisoryId' => 'PKSA-aaaa-bbbb-cccc',
+            'packageName' => 'typo3/cms-form',
+            'title' => 'Cross-site scripting in the form framework',
+            'link' => 'https://typo3.org/security/advisory/typo3-core-sa-2026-024',
+            'cve' => 'CVE-2026-109162',
+            'affectedVersions' => '>=14.0.0,<14.3.9',
+            'references' => [new AdvisoryReference('FriendsOfPHP', 'typo3/cms-form/CVE-2026-109162.yaml')],
+            'firstPatchedVersion' => '14.3.9',
+        ];
+        $unknown = AdvisoryBuilder::build(...$fields, severity: Severity::Unknown);
+
+        $rated = $unknown->withSeverity(Severity::Critical);
+
+        self::assertEquals(AdvisoryBuilder::build(...$fields, severity: Severity::Critical), $rated);
+        self::assertSame($unknown->getFingerprint(), $rated->getFingerprint());
+        self::assertSame(Severity::Unknown, $unknown->severity);
+    }
+
     /**
      * @param array<mixed> $references
      */

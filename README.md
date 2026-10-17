@@ -98,6 +98,28 @@ and a `PackageRef(PackageUrl::fromString('pkg:generic/php'), '8.3.6')`. The purl
 specification has no type for the PHP runtime, so it is a `generic` package. The
 API key is optional but raises the rate limit.
 
+Packagist gives no severity for advisories that only FriendsOfPHP knows, so they
+come back as `unknown`. To rate them from their CVE record at NVD, wrap the
+source:
+
+```php
+use mteu\AdvisoryMatcher\Source\Cache\CachingSeverityLookup;
+use mteu\AdvisoryMatcher\Source\Nvd\NvdSeverityLookup;
+use mteu\AdvisoryMatcher\Source\SeverityEnrichingAdvisorySource;
+
+new SeverityEnrichingAdvisorySource(
+    new CachingAdvisorySource(new PackagistAdvisorySource($httpClient, $factory, $factory), $cache),
+    new CachingSeverityLookup(new NvdSeverityLookup($httpClient, $factory, $nvdApiKey), $cache),
+    maxLookupsPerBatch: $nvdApiKey === '' ? 5 : 50,
+);
+```
+
+Keep it outside `CachingAdvisorySource`, so a lookup that failed is not cached
+with the answer. A severity a feed stated is never replaced. A lookup that fails,
+or goes past `maxLookupsPerBatch`, leaves the advisory `unknown` and is logged,
+but is no failure in the batch. Cached severities need no lookup, so later
+batches rate the rest.
+
 ## 📝 Things to know
 
 - Check each package with `wasAnsweredFor()`. `isComplete()` only tells you that no source reported a failure. A package that a feed has never heard of goes unanswered without any failure, so `isComplete()` can be true while that package was never checked.
