@@ -25,7 +25,6 @@ use mteu\AdvisoryMatcher\Tests\Unit\Clock\FrozenClock;
 use mteu\AdvisoryMatcher\Version\LenientVersionMatcher;
 use mteu\AdvisoryMatcher\Version\VersionConstraintMatcher;
 use PHPUnit\Framework\Attributes\CoversClass;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -159,103 +158,9 @@ final class NvdAdvisoryNormalizerTest extends TestCase
     }
 
     #[Test]
-    public function theBandIsReadFromThePrimaryMetricOfTheNewestCvssVersion(): void
+    public function theSeverityIsReadFromTheRecordsMetrics(): void
     {
         self::assertSame(Severity::High, $this->normalize(self::cveRecord())->severity);
-    }
-
-    #[Test]
-    public function cvssV4WinsOverV31(): void
-    {
-        $record = self::cveRecord();
-        $record['metrics'] = [
-            'cvssMetricV31' => [['type' => 'Primary', 'cvssData' => ['baseScore' => 7.5, 'baseSeverity' => 'HIGH']]],
-            'cvssMetricV40' => [['type' => 'Primary', 'cvssData' => ['baseScore' => 9.3, 'baseSeverity' => 'CRITICAL']]],
-        ];
-
-        self::assertSame(Severity::Critical, $this->normalize($record)->severity);
-    }
-
-    #[Test]
-    public function cvssV31WinsOverV2(): void
-    {
-        $v2 = ['cvssMetricV2' => [['type' => 'Primary', 'cvssData' => ['baseScore' => 2.6], 'baseSeverity' => 'LOW']]];
-        $record = self::cveRecord();
-
-        $record['metrics'] = $v2;
-        self::assertSame(Severity::Low, $this->normalize($record)->severity, 'v2 alone is read.');
-
-        $record['metrics'] = $v2 + [
-            'cvssMetricV31' => [['type' => 'Primary', 'cvssData' => ['baseScore' => 7.5, 'baseSeverity' => 'HIGH']]],
-        ];
-        self::assertSame(Severity::High, $this->normalize($record)->severity);
-    }
-
-    #[Test]
-    public function withoutAPrimaryMetricTheFirstOneIsRead(): void
-    {
-        $record = self::cveRecord();
-        $record['metrics'] = ['cvssMetricV31' => [
-            ['type' => 'Secondary', 'cvssData' => ['baseSeverity' => 'MEDIUM']],
-            ['type' => 'Secondary', 'cvssData' => ['baseSeverity' => 'CRITICAL']],
-        ]];
-
-        self::assertSame(Severity::Medium, $this->normalize($record)->severity);
-    }
-
-    /**
-     * @param array<string, mixed> $metrics
-     */
-    #[Test]
-    #[DataProvider('metricProvider')]
-    public function severityFollowsTheStatedBandThenTheScoreThenUnknown(array $metrics, Severity $expected): void
-    {
-        $record = self::cveRecord();
-        $record['metrics'] = $metrics;
-
-        self::assertSame($expected, $this->normalize($record)->severity);
-    }
-
-    /**
-     * @return iterable<string, array{array<string, mixed>, Severity}>
-     */
-    public static function metricProvider(): iterable
-    {
-        $v2 = static fn (array $metric): array => ['cvssMetricV2' => [['type' => 'Primary'] + $metric]];
-
-        yield 'score 9.0 is critical' => [$v2(['cvssData' => ['baseScore' => 9.0]]), Severity::Critical];
-        yield 'score 7.0 is high' => [$v2(['cvssData' => ['baseScore' => 7.0]]), Severity::High];
-        yield 'score 4.0 is medium' => [$v2(['cvssData' => ['baseScore' => 4.0]]), Severity::Medium];
-        yield 'score 3.9 is low' => [$v2(['cvssData' => ['baseScore' => 3.9]]), Severity::Low];
-        yield 'a numeric string score' => [$v2(['cvssData' => ['baseScore' => '9.8']]), Severity::Critical];
-        yield 'v2 states its band beside the score data' => [
-            $v2(['cvssData' => ['baseScore' => 9.3], 'baseSeverity' => 'MEDIUM']),
-            Severity::Medium,
-        ];
-        yield 'a stated band wins over the score' => [
-            $v2(['cvssData' => ['baseScore' => 9.8, 'baseSeverity' => 'LOW']]),
-            Severity::Low,
-        ];
-        yield 'NONE is low' => [$v2(['cvssData' => ['baseSeverity' => 'NONE']]), Severity::Low];
-        yield 'an unknown label with no score is unknown' => [
-            $v2(['cvssData' => ['baseSeverity' => 'SEVERE']]),
-            Severity::Unknown,
-        ];
-        yield 'an unknown label falls to the score' => [
-            $v2(['cvssData' => ['baseSeverity' => 'SEVERE', 'baseScore' => 7.1]]),
-            Severity::High,
-        ];
-        yield 'a blank label falls to the score' => [
-            $v2(['cvssData' => ['baseSeverity' => ' ', 'baseScore' => 7.1]]),
-            Severity::High,
-        ];
-        yield 'no metrics at all is unknown' => [[], Severity::Unknown];
-        yield 'an empty block is skipped' => [['cvssMetricV40' => [], ...$v2(['cvssData' => ['baseScore' => 9.1]])], Severity::Critical];
-        yield 'a metric with neither band nor score is skipped' => [
-            ['cvssMetricV31' => [['type' => 'Primary', 'cvssData' => []]], ...$v2(['cvssData' => ['baseScore' => 7.2]])],
-            Severity::High,
-        ];
-        yield 'nothing usable anywhere is unknown' => [['cvssMetricV31' => [['type' => 'Primary']]], Severity::Unknown];
     }
 
     #[Test]

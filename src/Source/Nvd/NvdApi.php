@@ -38,6 +38,8 @@ final readonly class NvdApi
 
     private const int MAX_PAGES = 5;
 
+    private const string CVE_ID_PATTERN = '/^CVE-\d{4}-\d{4,}$/D';
+
     public function __construct(
         private ClientInterface $httpClient,
         private RequestFactoryInterface $requestFactory,
@@ -80,11 +82,30 @@ final readonly class NvdApi
     }
 
     /**
+     * @return array<string, mixed>|SourceFailure the `cve` object, or [] when NVD has no record of the id
+     */
+    public function findVulnerabilityByCveId(string $cveId): array|SourceFailure
+    {
+        if (preg_match(self::CVE_ID_PATTERN, $cveId) !== 1) {
+            // The id comes from a feed, so it is neither sent nor repeated in the detail.
+            return $this->failure(FailureReason::Rejected, 'An id that is not a CVE id was not sent.');
+        }
+
+        $read = $this->read(['cveId' => $cveId]);
+
+        if ($read instanceof SourceFailure) {
+            return $read;
+        }
+
+        return $read['records'][0] ?? [];
+    }
+
+    /**
      * @return array{records: list<array<string, mixed>>, totalResults: int}|SourceFailure
      */
     private function readPage(string $cpeName, int $startIndex): array|SourceFailure
     {
-        $query = http_build_query([
+        return $this->read([
             'cpeName' => $cpeName,
             // NVD takes these as valueless flags, spelled with an empty value in the query string.
             'isVulnerable' => '',
@@ -92,9 +113,16 @@ final readonly class NvdApi
             'resultsPerPage' => self::RESULTS_PER_PAGE,
             'startIndex' => $startIndex,
         ]);
+    }
 
+    /**
+     * @param array<string, string|int> $query
+     * @return array{records: list<array<string, mixed>>, totalResults: int}|SourceFailure
+     */
+    private function read(array $query): array|SourceFailure
+    {
         $request = $this->userAgent->applyTo(
-            $this->requestFactory->createRequest('GET', $this->endpoint . '?' . $query)
+            $this->requestFactory->createRequest('GET', $this->endpoint . '?' . http_build_query($query))
                 ->withHeader('Accept', 'application/json'),
         );
 

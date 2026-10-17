@@ -68,6 +68,22 @@ final readonly class Advisory
         return is_string($scheme) && in_array(strtolower($scheme), ['http', 'https'], true);
     }
 
+    public function withSeverity(Severity $severity): self
+    {
+        return new self(
+            advisoryId: $this->advisoryId,
+            package: $this->package,
+            title: $this->title,
+            link: $this->link,
+            cve: $this->cve,
+            affectedVersions: $this->affectedVersions,
+            reportedAt: $this->reportedAt,
+            severity: $severity,
+            references: $this->references,
+            firstPatchedVersion: $this->firstPatchedVersion,
+        );
+    }
+
     public function getFingerprint(): string
     {
         return AdvisoryFingerprint::canonical($this);

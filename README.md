@@ -8,8 +8,8 @@
 
 </div>
 
-Framework-agnostic PHP library that matches installed packages against security advisories from Packagist, OSV, and NVD
-to answer on whether a package is affected by a security advisory.
+Framework-agnostic PHP library that matches installed packages against security advisories from Packagist, OSV, and NVD.
+It answers one question: is this package affected?
 
 You hand it packages. It gives back advisories, plus a record of which packages it actually checked and which sources
 failed.
@@ -19,6 +19,7 @@ failed.
 > without notice.
 
 ## 🚀 Features
+
 * [Packagist](https://packagist.org/apidoc) for Composer packages
 * [OSV](https://google.github.io/osv.dev/api/) for Composer and npm packages
 * [NVD](https://nvd.nist.gov/developers/vulnerabilities) for the PHP runtime
@@ -29,7 +30,7 @@ failed.
 composer require mteu/advisory-matcher
 ```
 
-You also need a PSR-18 HTTP client and PSR-17 factories. (A PSR-16 cache and a PSR-3 logger are optional.)
+You also need a PSR-18 HTTP client and PSR-17 factories. A PSR-16 cache and a PSR-3 logger are optional.
 
 See [framework setup](docs/frameworks.md) for TYPO3, Symfony, and Drupal examples.
 
@@ -93,36 +94,61 @@ foreach ($packages as $package) {
 }
 ```
 
-To check the PHP runtime, add `NvdAdvisorySource($httpClient, $factory, $nvdApiKey)`
-and a `PackageRef(PackageUrl::fromString('pkg:generic/php'), '8.3.6')`. The purl
-specification has no type for the PHP runtime, so it is a `generic` package. The
-API key is optional but raises the rate limit.
-
 ## 📝 Things to know
 
-- Check each package with `wasAnsweredFor()`. `isComplete()` only tells you that no source reported a failure. A package that a feed has never heard of goes unanswered without any failure, so `isComplete()` can be true while that package was never checked.
-- Matching returns affected, not affected or undetermined. Undetermined means the version couldn't be parsed or no usable range existed. It does not mean clean.
-- Failures are yours to handle. `$batch->failures` lists them, each with a `FailureReason`. The library doesn't retry. Call `isTransient()` to see whether asking again makes sense.
-- Advisory text comes from third parties. Escape every field before you show it. I mean it.
-- Packages are named by package URL. `PackageUrl` lowercases a Composer vendor and name and keeps an npm name's case, as the purl specification has them. Build one from a registry name with `PackageUrl::fromPackageName('npm', '@babel/core')`.
+- Call `wasAnsweredFor()` for each package. `isComplete()` only says that no source reported a failure. A package that a feed has never heard of goes unanswered without any failure.
+- Matching returns affected, not affected, or undetermined. Undetermined means the version could not be parsed or no usable range existed. It does not mean clean.
+- Failures are yours to handle. `$batch->failures` lists them, each with a `FailureReason`. The library does not retry. Call `isTransient()` to see if asking again makes sense.
+- Advisory text comes from third parties. Escape every field before you show it.
+- Packages are named by package URL. `PackageUrl` lowercases a Composer vendor and name and keeps an npm name's case, as the purl specification has it. Build one from a registry name with `PackageUrl::fromPackageName('npm', '@babel/core')`.
 - Store findings by fingerprint, not by `advisoryId`. Get it with `$advisory->getFingerprint()` and look it up with `AdvisoryFingerprint::identitiesOf($advisory)`.
-- The library uses your HTTP client, so timeouts and proxy settings are yours to set. Each source also accepts `userAgent:` and `endpoint:`.
+- The library uses your HTTP client. Timeouts and proxy settings are yours to set. Each source also accepts `userAgent:` and `endpoint:`.
+
+## 🔧 Optional setup
+
+### PHP runtime
+
+Add `NvdAdvisorySource($httpClient, $factory, $nvdApiKey)` to your sources. Then check the runtime with
+`new PackageRef(PackageUrl::fromString('pkg:generic/php'), '8.3.6')`.
+
+The purl specification has no type for the PHP runtime, so it is a `generic` package. The API key is optional but
+raises the rate limit.
+
+### Severity for Packagist advisories
+
+Packagist gives no severity for advisories that only FriendsOfPHP knows, so they come back as `unknown`. To rate them
+from their CVE record at NVD, wrap the source:
+
+```php
+use mteu\AdvisoryMatcher\Source\Cache\CachingSeverityLookup;
+use mteu\AdvisoryMatcher\Source\Nvd\NvdSeverityLookup;
+use mteu\AdvisoryMatcher\Source\SeverityEnrichingAdvisorySource;
+
+new SeverityEnrichingAdvisorySource(
+    new CachingAdvisorySource(new PackagistAdvisorySource($httpClient, $factory, $factory), $cache),
+    new CachingSeverityLookup(new NvdSeverityLookup($httpClient, $factory, $nvdApiKey), $cache),
+    maxLookupsPerBatch: $nvdApiKey === '' ? 5 : 50,
+);
+```
+
+Keep it outside `CachingAdvisorySource`, so a failed lookup is not cached with the answer.
+
+A severity that a feed stated is never replaced. A lookup that fails, or goes past `maxLookupsPerBatch`, leaves the
+advisory `unknown` and is logged, but it is not a failure in the batch. Cached severities need no lookup, so later
+batches rate the rest.
 
 ## 📙 Documentation
 
-See the [public API reference](docs/api.md) for the supported types.
-Everything else is `@internal`. 🤷‍♂️
+See the [public API reference](docs/api.md) for the supported types. Everything else is `@internal`.
 
 ## 🤝 Contributing
 
-Contributions are very welcome! Please have a look at the
-[Contribution Guide](CONTRIBUTING.md). It lays out the workflow of submitting
-new features or bugfixes.
+Contributions are very welcome. Please read the [Contribution Guide](CONTRIBUTING.md). It lays out the workflow for
+submitting features and bugfixes.
 
 ## 🔒 Security
 
-Please refer to the [Security Policy](SECURITY.md) if you discover a security
-vulnerability in this library.
+If you find a security vulnerability in this library, please follow the [Security Policy](SECURITY.md).
 
 ## ⭐ License
 
@@ -130,5 +156,4 @@ This library is licensed under the [MIT](LICENSE.md) license.
 
 ## 💬 Support
 
-For issues and feature requests, please use the
-[GitHub issue tracker](https://github.com/mteu/advisory-matcher/issues).
+For issues and feature requests, use the [GitHub issue tracker](https://github.com/mteu/advisory-matcher/issues).

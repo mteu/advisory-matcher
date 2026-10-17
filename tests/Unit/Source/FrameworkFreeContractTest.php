@@ -13,18 +13,24 @@ declare(strict_types=1);
 
 namespace mteu\AdvisoryMatcher\Tests\Unit\Source;
 
+use mteu\AdvisoryMatcher\Advisory\Severity;
 use mteu\AdvisoryMatcher\Package\Ecosystem;
 use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Source\AdvisoryBatch;
 use mteu\AdvisoryMatcher\Source\AdvisorySource;
+use mteu\AdvisoryMatcher\Source\Cache\CachingAdvisorySource;
+use mteu\AdvisoryMatcher\Source\Cache\CachingSeverityLookup;
 use mteu\AdvisoryMatcher\Source\CompositeAdvisorySource;
 use mteu\AdvisoryMatcher\Source\FailureReason;
 use mteu\AdvisoryMatcher\Source\Nvd\NvdAdvisorySource;
+use mteu\AdvisoryMatcher\Source\Nvd\NvdSeverityLookup;
 use mteu\AdvisoryMatcher\Source\Osv\OsvAdvisorySource;
 use mteu\AdvisoryMatcher\Source\PackageRef;
 use mteu\AdvisoryMatcher\Source\Packagist\PackagistAdvisorySource;
+use mteu\AdvisoryMatcher\Source\SeverityEnrichingAdvisorySource;
 use mteu\AdvisoryMatcher\Source\SourceFailure;
 use mteu\AdvisoryMatcher\Tests\Unit\Advisory\AdvisoryBuilder;
+use mteu\AdvisoryMatcher\Tests\Unit\Source\Cache\SimpleCacheDouble;
 use mteu\AdvisoryMatcher\Tests\Unit\Source\Http\RecordingHttpClient;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
@@ -37,6 +43,9 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(OsvAdvisorySource::class)]
 #[CoversClass(NvdAdvisorySource::class)]
 #[CoversClass(CompositeAdvisorySource::class)]
+#[CoversClass(SeverityEnrichingAdvisorySource::class)]
+#[CoversClass(CachingSeverityLookup::class)]
+#[CoversClass(NvdSeverityLookup::class)]
 final class FrameworkFreeContractTest extends TestCase
 {
     #[Test]
@@ -227,6 +236,52 @@ final class FrameworkFreeContractTest extends TestCase
         self::assertSame('OSV-GHSA-f2qw-2xgc-8c9x', $batch->advisoriesFor($monolog)[0]->advisoryId);
         self::assertTrue($batch->wasAnsweredFor($php));
         self::assertCount(2, $batch->advisoriesFor($php));
+    }
+
+    #[Test]
+    public function aFriendsOfPhpAdvisoryWithoutSeverityIsRatedFromNvdOnceAcrossRuns(): void
+    {
+        $factory = new Psr17Factory();
+        $cache = new SimpleCacheDouble();
+        $form = new PackageRef(PackageUrl::fromPackageName('composer', 'typo3/cms-form'), '14.3.8');
+
+        $packagistHttp = new RecordingHttpClient([new Response(200, [], (string)json_encode(['advisories' => ['typo3/cms-form' => [[
+            'advisoryId' => 'PKSA-tzfq-1v8b-kt8q',
+            'packageName' => 'typo3/cms-form',
+            'remoteId' => 'typo3/cms-form/CVE-2026-109162.yaml',
+            'title' => 'TYPO3-CORE-SA-2026-024: Cross-Site Scripting in Form Framework',
+            'link' => 'https://typo3.org/security/advisory/typo3-core-sa-2026-024',
+            'cve' => 'CVE-2026-109162',
+            'affectedVersions' => '>=14.0.0,<14.3.9',
+            'source' => 'FriendsOfPHP/security-advisories',
+            'reportedAt' => '2026-10-14 08:00:00',
+            'composerRepository' => 'https://packagist.org',
+            'severity' => null,
+            'sources' => [['name' => 'FriendsOfPHP/security-advisories', 'remoteId' => 'typo3/cms-form/CVE-2026-109162.yaml']],
+        ]]]]))]);
+        $nvdHttp = new RecordingHttpClient([new Response(200, [], (string)json_encode([
+            'resultsPerPage' => 1,
+            'startIndex' => 0,
+            'totalResults' => 1,
+            'vulnerabilities' => [['cve' => [
+                'id' => 'CVE-2026-109162',
+                'metrics' => ['cvssMetricV31' => [['type' => 'Primary', 'cvssData' => ['baseScore' => 5.4, 'baseSeverity' => 'MEDIUM']]]],
+            ]]],
+        ]))]);
+
+        $source = new SeverityEnrichingAdvisorySource(
+            new CachingAdvisorySource(new PackagistAdvisorySource($packagistHttp, $factory, $factory), $cache),
+            new CachingSeverityLookup(new NvdSeverityLookup($nvdHttp, $factory), $cache),
+        );
+
+        $first = $source->advisoriesFor([$form]);
+        $second = $source->advisoriesFor([$form]);
+
+        self::assertSame(Severity::Medium, $first->advisoriesFor($form)[0]->severity);
+        self::assertSame(Severity::Medium, $second->advisoriesFor($form)[0]->severity);
+        self::assertTrue($second->isComplete());
+        self::assertCount(1, $packagistHttp->sentRequests());
+        self::assertCount(1, $nvdHttp->sentRequests(), 'The second run reads the stored severity.');
     }
 
     /**

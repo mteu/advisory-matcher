@@ -15,7 +15,6 @@ namespace mteu\AdvisoryMatcher\Advisory\Nvd;
 
 use mteu\AdvisoryMatcher\Advisory\Advisory;
 use mteu\AdvisoryMatcher\Advisory\AdvisoryReference;
-use mteu\AdvisoryMatcher\Advisory\Severity;
 use mteu\AdvisoryMatcher\Package\CpeIdentity;
 use mteu\AdvisoryMatcher\Package\PackageUrl;
 use mteu\AdvisoryMatcher\Version\AffectedVersions;
@@ -34,17 +33,11 @@ final readonly class NvdAdvisoryNormalizer
         'versionEndIncluding',
     ];
 
-    private const array METRIC_KEYS = [
-        'cvssMetricV40',
-        'cvssMetricV31',
-        'cvssMetricV30',
-        'cvssMetricV2',
-    ];
-
     private const int TITLE_LENGTH = 120;
 
     public function __construct(
         private ClockInterface $clock,
+        private NvdSeverityReader $severityReader = new NvdSeverityReader(),
     ) {
     }
 
@@ -70,7 +63,7 @@ final readonly class NvdAdvisoryNormalizer
             cve: str_starts_with($id, 'CVE-') ? $id : '',
             affectedVersions: $this->extractVersionRanges($matches),
             reportedAt: $this->extractReportedAt($cve['published'] ?? null),
-            severity: $this->extractSeverity($cve),
+            severity: $this->severityReader->severityOf($cve),
             references: [new AdvisoryReference('NVD', $id)],
             firstPatchedVersion: $this->extractFirstPatchedVersion($matches, $installedRelease),
         );
@@ -245,84 +238,6 @@ final readonly class NvdAdvisoryNormalizer
         }
 
         return 'Security vulnerability';
-    }
-
-    /**
-     * @param array<string, mixed> $cve
-     */
-    private function extractSeverity(array $cve): Severity
-    {
-        $allMetrics = $cve['metrics'] ?? null;
-
-        if (!is_array($allMetrics)) {
-            return Severity::Unknown;
-        }
-
-        foreach (self::METRIC_KEYS as $metricKey) {
-            $metrics = $allMetrics[$metricKey] ?? null;
-
-            if (!is_array($metrics) || $metrics === []) {
-                continue;
-            }
-
-            $metric = $this->chosenMetric($metrics);
-            $cvssData = is_array($metric['cvssData'] ?? null) ? $metric['cvssData'] : [];
-            $statedBand = $this->statedBand($metric, $cvssData);
-
-            $stated = Severity::fromFeedValue($statedBand);
-
-            if ($stated !== Severity::Unknown) {
-                return $stated;
-            }
-
-            $baseScore = $cvssData['baseScore'] ?? null;
-
-            if (is_numeric($baseScore)) {
-                return Severity::fromCvssScore((float)$baseScore);
-            }
-        }
-
-        return Severity::Unknown;
-    }
-
-    /**
-     * @param array<mixed> $metrics
-     * @return array<mixed>
-     */
-    private function chosenMetric(array $metrics): array
-    {
-        $chosen = [];
-
-        foreach ($metrics as $metric) {
-            if (!is_array($metric)) {
-                continue;
-            }
-
-            if (($metric['type'] ?? null) === 'Primary') {
-                return $metric;
-            }
-
-            if ($chosen === []) {
-                $chosen = $metric;
-            }
-        }
-
-        return $chosen;
-    }
-
-    /**
-     * @param array<mixed> $metric
-     * @param array<mixed> $cvssData
-     */
-    private function statedBand(array $metric, array $cvssData): string
-    {
-        foreach ([$cvssData['baseSeverity'] ?? null, $metric['baseSeverity'] ?? null] as $baseSeverity) {
-            if (is_string($baseSeverity) && trim($baseSeverity) !== '') {
-                return $baseSeverity;
-            }
-        }
-
-        return '';
     }
 
     private function extractReportedAt(mixed $published): \DateTimeImmutable
