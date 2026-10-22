@@ -18,6 +18,7 @@ enum Ecosystem: string
     case Composer = 'composer';
     case Npm = 'npm';
     case Php = 'php';
+    case Platform = 'platform';
     case Unknown = 'unknown';
 
     public function getDisplayName(): string
@@ -26,6 +27,7 @@ enum Ecosystem: string
             self::Composer => 'Composer',
             self::Npm => 'npm',
             self::Php => 'PHP',
+            self::Platform => 'Platform',
             self::Unknown => 'Unknown',
         };
     }

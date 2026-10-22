@@ -71,10 +71,10 @@ final readonly class AdvisoryMatcher
         try {
             return $this->resultOf($this->strict->satisfies($version, $affected->toComposerConstraint()));
         } catch (\UnexpectedValueException) {
-            // Only Composer and PHP versions are close enough to Composer's rules for the lenient fallback.
+            // Only Composer, PHP and platform versions are close enough to Composer's rules for the lenient fallback.
         }
 
-        if (!in_array($ecosystem, [Ecosystem::Composer, Ecosystem::Php], true)
+        if (!in_array($ecosystem, [Ecosystem::Composer, Ecosystem::Php, Ecosystem::Platform], true)
             || !$this->lenient->canCompare($version, $affected)
         ) {
             return MatchResult::Undetermined;

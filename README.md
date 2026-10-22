@@ -22,7 +22,7 @@ failed.
 
 * [Packagist](https://packagist.org/apidoc) for Composer packages
 * [OSV](https://google.github.io/osv.dev/api/) for Composer and npm packages
-* [NVD](https://nvd.nist.gov/developers/vulnerabilities) for the PHP runtime
+* [NVD](https://nvd.nist.gov/developers/vulnerabilities) for the PHP runtime and the web and database servers it runs on
 
 ## ⚡️ Installation
 
@@ -113,6 +113,11 @@ Add `NvdAdvisorySource($httpClient, $factory, $nvdApiKey)` to your sources. Then
 
 The purl specification has no type for the PHP runtime, so it is a `generic` package. The API key is optional but
 raises the rate limit.
+
+The same source checks the platform: a web or database server named by a `PlatformProduct`, such as
+`new PackageRef(PackageUrl::fromPackageName('generic', PlatformProduct::MariaDb->value), '10.11.6')`.
+Products NVD files under more than one CPE name, nginx and MySQL for now, are recognized but go unanswered, because
+asking under one of those names alone could miss CVEs filed under the other and pass the server as clean.
 
 ### Severity for Packagist advisories
 

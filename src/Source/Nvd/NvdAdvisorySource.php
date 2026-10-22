@@ -37,6 +37,9 @@ final readonly class NvdAdvisorySource implements AdvisorySource
 {
     public const string NAME = 'NVD';
 
+    /** Software no package registry ships: the PHP runtime and the platform it runs on. */
+    private const array COVERED_ECOSYSTEMS = [Ecosystem::Php, Ecosystem::Platform];
+
     private NvdApi $api;
 
     private NvdAdvisoryNormalizer $normalizer;
@@ -73,14 +76,14 @@ final readonly class NvdAdvisorySource implements AdvisorySource
 
     public function coveredEcosystems(): array
     {
-        return [Ecosystem::Php];
+        return self::COVERED_ECOSYSTEMS;
     }
 
     public function advisoriesFor(array $packages): AdvisoryBatch
     {
         $answeredFor = [];
 
-        /** @var array<string, array{failure: SourceFailure, components: int}> $unanswered */
+        /** @var array<string, array{failure: SourceFailure, ecosystem: Ecosystem, components: int}> $unanswered */
         $unanswered = [];
         $givenUp = null;
 
@@ -89,7 +92,7 @@ final readonly class NvdAdvisorySource implements AdvisorySource
             $records = $givenUp ?? $this->api->findVulnerabilities($cpeName);
 
             if ($records instanceof SourceFailure) {
-                $unanswered = $this->tally($unanswered, count($query['packages']), $records);
+                $unanswered = $this->tally($unanswered, $query, $records);
                 $givenUp = $records->reason->isTransient() ? $records : null;
                 continue;
             }
@@ -112,14 +115,14 @@ final readonly class NvdAdvisorySource implements AdvisorySource
 
     /**
      * @param list<PackageRef> $packages
-     * @return array<string, array{identity: CpeIdentity, release: string, packages: list<PackageRef>}>
+     * @return array<string, array{identity: CpeIdentity, release: string, ecosystem: Ecosystem, packages: list<PackageRef>}>
      */
     private function queriesFor(array $packages): array
     {
         $queries = [];
 
         foreach ($packages as $package) {
-            if ($package->ecosystem !== Ecosystem::Php) {
+            if (!in_array($package->ecosystem, self::COVERED_ECOSYSTEMS, true)) {
                 continue;
             }
 
@@ -133,6 +136,7 @@ final readonly class NvdAdvisorySource implements AdvisorySource
             $queries[$cpeName] ??= [
                 'identity' => $identity,
                 'release' => $identity->releaseOf($package->version),
+                'ecosystem' => $package->ecosystem,
                 'packages' => [],
             ];
             $queries[$cpeName]['packages'][] = $package;
@@ -143,7 +147,7 @@ final readonly class NvdAdvisorySource implements AdvisorySource
 
     /**
      * @param list<array<string, mixed>> $records
-     * @param array{identity: CpeIdentity, release: string, packages: list<PackageRef>} $query
+     * @param array{identity: CpeIdentity, release: string, ecosystem: Ecosystem, packages: list<PackageRef>} $query
      * @return list<Advisory>
      */
     private function normalizeAll(array $records, PackageUrl $package, array $query): array
@@ -161,23 +165,28 @@ final readonly class NvdAdvisorySource implements AdvisorySource
     }
 
     /**
-     * @param array<string, array{failure: SourceFailure, components: int}> $unanswered
-     * @return array<string, array{failure: SourceFailure, components: int}>
+     * The API does not know which ecosystem it was asked for, so the failure is
+     * filed under the ecosystem of the query here.
+     *
+     * @param array<string, array{failure: SourceFailure, ecosystem: Ecosystem, components: int}> $unanswered
+     * @param array{identity: CpeIdentity, release: string, ecosystem: Ecosystem, packages: list<PackageRef>} $query
+     * @return array<string, array{failure: SourceFailure, ecosystem: Ecosystem, components: int}>
      */
-    private function tally(array $unanswered, int $components, SourceFailure $failure): array
+    private function tally(array $unanswered, array $query, SourceFailure $failure): array
     {
-        $key = $failure->reason->value;
+        $key = $query['ecosystem']->value . ':' . $failure->reason->value;
 
         $unanswered[$key] = [
             'failure' => $unanswered[$key]['failure'] ?? $failure,
-            'components' => ($unanswered[$key]['components'] ?? 0) + $components,
+            'ecosystem' => $query['ecosystem'],
+            'components' => ($unanswered[$key]['components'] ?? 0) + count($query['packages']),
         ];
 
         return $unanswered;
     }
 
     /**
-     * @param array<string, array{failure: SourceFailure, components: int}> $unanswered
+     * @param array<string, array{failure: SourceFailure, ecosystem: Ecosystem, components: int}> $unanswered
      * @return list<SourceFailure>
      */
     private function failuresFrom(array $unanswered): array
@@ -188,7 +197,7 @@ final readonly class NvdAdvisorySource implements AdvisorySource
             $failure = $entry['failure'];
             $failures[] = new SourceFailure(
                 sourceName: $failure->sourceName,
-                ecosystem: $failure->ecosystem,
+                ecosystem: $entry['ecosystem'],
                 reason: $failure->reason,
                 detail: sprintf('%d component(s) left unanswered. %s', $entry['components'], $failure->detail),
                 retryAfterSeconds: $failure->retryAfterSeconds,
