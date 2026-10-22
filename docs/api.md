@@ -10,7 +10,7 @@ any release.
 - [`Source\AdvisorySource`](../src/Source/AdvisorySource.php): the interface every source implements
 - [`Source\Packagist\PackagistAdvisorySource`](../src/Source/Packagist/PackagistAdvisorySource.php): Composer packages
 - [`Source\Osv\OsvAdvisorySource`](../src/Source/Osv/OsvAdvisorySource.php): Composer and npm packages
-- [`Source\Nvd\NvdAdvisorySource`](../src/Source/Nvd/NvdAdvisorySource.php): the PHP runtime
+- [`Source\Nvd\NvdAdvisorySource`](../src/Source/Nvd/NvdAdvisorySource.php): the PHP runtime and the platform it runs on
 - [`Source\CompositeAdvisorySource`](../src/Source/CompositeAdvisorySource.php): asks several sources and merges the answers
 - [`Source\Cache\CachingAdvisorySource`](../src/Source/Cache/CachingAdvisorySource.php): caches answers of another source
 - [`Source\AdvisoryDeduplicator`](../src/Source/AdvisoryDeduplicator.php): folds reports of one vulnerability into one advisory
@@ -26,7 +26,8 @@ any release.
 
 - [`Source\PackageRef`](../src/Source/PackageRef.php): a package and version to check, readable from and writable as a package URL
 - [`Package\PackageUrl`](../src/Package/PackageUrl.php): a package as a canonical package URL without version
-- [`Package\Ecosystem`](../src/Package/Ecosystem.php): `composer`, `npm`, `php` or `unknown`
+- [`Package\Ecosystem`](../src/Package/Ecosystem.php): `composer`, `npm`, `php`, `platform` or `unknown`
+- [`Package\PlatformProduct`](../src/Package/PlatformProduct.php): the web and database servers of the `platform` ecosystem, by their `generic` package name
 - [`Source\AdvisoryBatch`](../src/Source/AdvisoryBatch.php): the result of one lookup
 - [`Source\AnsweredPackage`](../src/Source/AnsweredPackage.php): a checked package with its advisories
 - [`Source\SourceFailure`](../src/Source/SourceFailure.php): a source that did not answer

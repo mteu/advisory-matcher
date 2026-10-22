@@ -34,6 +34,15 @@ final class CpeIdentityTest extends TestCase
         self::assertSame('php', $identity->product);
     }
 
+    #[Test]
+    public function aPlatformComponentResolvesToItsProductsCpe(): void
+    {
+        $identity = CpeIdentity::forPackage(PackageUrl::fromString('pkg:generic/httpd'));
+
+        self::assertInstanceOf(CpeIdentity::class, $identity);
+        self::assertSame('cpe:2.3:a:apache:http_server:', $identity->criteriaPrefix());
+    }
+
     /**
      * @return iterable<string, array{string}>
      */
@@ -44,6 +53,7 @@ final class CpeIdentityTest extends TestCase
         yield 'an npm package named like the runtime' => ['pkg:npm/php'];
         yield 'another runtime' => ['pkg:generic/php-fpm'];
         yield 'another generic package' => ['pkg:generic/openssl'];
+        yield 'a platform product NVD files under several CPEs' => ['pkg:generic/nginx'];
         yield 'the runtime under a type the specification does not register' => ['pkg:php/php'];
     }
 

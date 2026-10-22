@@ -59,6 +59,9 @@ parameters:
 		-
 			identifier: ergebnis.noNullableReturnTypeDeclaration
 			path: ../../src/Package/CpeIdentity.php
+		-
+			identifier: ergebnis.noNullableReturnTypeDeclaration
+			path: ../../src/Package/PlatformProduct.php
 		# The null-object PSR-16 cache. Its nullable signatures are the
 		# interface's own, so there is no non-nullable shape to choose.
 		-

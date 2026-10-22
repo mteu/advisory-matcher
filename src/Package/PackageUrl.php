@@ -93,6 +93,8 @@ final readonly class PackageUrl
             $this->type === 'composer' => Ecosystem::Composer,
             $this->type === 'npm' => Ecosystem::Npm,
             $this->type === 'generic' && $this->namespace === '' && $this->name === 'php' => Ecosystem::Php,
+            $this->type === 'generic' && $this->namespace === '' && PlatformProduct::tryFrom($this->name) !== null
+                => Ecosystem::Platform,
             default => Ecosystem::Unknown,
         };
     }

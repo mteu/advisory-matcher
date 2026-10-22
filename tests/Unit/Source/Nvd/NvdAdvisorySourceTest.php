@@ -22,6 +22,7 @@ use mteu\AdvisoryMatcher\Source\FailureReason;
 use mteu\AdvisoryMatcher\Source\Nvd\NvdAdvisorySource;
 use mteu\AdvisoryMatcher\Source\Nvd\NvdApi;
 use mteu\AdvisoryMatcher\Source\PackageRef;
+use mteu\AdvisoryMatcher\Source\SourceFailure;
 use mteu\AdvisoryMatcher\Tests\Unit\Clock\FrozenClock;
 use mteu\AdvisoryMatcher\Tests\Unit\Source\Http\CollectingLogger;
 use mteu\AdvisoryMatcher\Tests\Unit\Source\Http\NetworkFailure;
@@ -220,12 +221,54 @@ final class NvdAdvisorySourceTest extends TestCase
     }
 
     #[Test]
-    public function coverageIsThePhpRuntimeAlone(): void
+    public function coverageIsThePhpRuntimeAndThePlatformItRunsOn(): void
     {
         $source = $this->subject(new RecordingHttpClient());
 
-        self::assertSame([Ecosystem::Php], $source->coveredEcosystems());
+        self::assertSame([Ecosystem::Php, Ecosystem::Platform], $source->coveredEcosystems());
         self::assertSame('NVD', $source->name());
+    }
+
+    #[Test]
+    public function aPlatformComponentIsAskedAboutByItsProductsCpe(): void
+    {
+        $httpd = $this->platform('httpd', '2.4.62');
+        $http = new RecordingHttpClient([self::json(self::emptyPage())]);
+
+        $batch = $this->subject($http)->advisoriesFor([$httpd]);
+
+        self::assertSame(
+            'cpe:2.3:a:apache:http_server:2.4.62:*:*:*:*:*:*:*',
+            self::query($http->sentRequests()[0])['cpeName'] ?? null,
+        );
+        self::assertTrue($batch->wasAnsweredFor($httpd));
+    }
+
+    #[Test]
+    public function aPlatformProductWithoutACpeIsNeitherAskedNorAnsweredNorAFailure(): void
+    {
+        $http = new RecordingHttpClient();
+        $nginx = $this->platform('nginx', '1.27.3');
+
+        $batch = $this->subject($http)->advisoriesFor([$nginx]);
+
+        self::assertSame([], $http->sentRequests());
+        self::assertFalse($batch->wasAnsweredFor($nginx));
+        self::assertSame([], $batch->failures);
+    }
+
+    #[Test]
+    public function aFailureIsFiledUnderTheEcosystemOfEachComponentItCost(): void
+    {
+        $http = new RecordingHttpClient([new Response(403), new Response(403)]);
+
+        $batch = $this->subject($http)->advisoriesFor([$this->php('8.3.14'), $this->platform('mariadb', '10.11.6')]);
+
+        self::assertSame(
+            [Ecosystem::Php, Ecosystem::Platform],
+            array_map(static fn (SourceFailure $failure): Ecosystem => $failure->ecosystem, $batch->failures),
+        );
+        self::assertStringStartsWith('1 component(s) left unanswered.', $batch->failures[1]->detail);
     }
 
     #[Test]
@@ -473,6 +516,11 @@ final class NvdAdvisorySourceTest extends TestCase
     private function php(string $version, string $name = 'php'): PackageRef
     {
         return new PackageRef(PackageUrl::fromPackageName('generic', $name), $version);
+    }
+
+    private function platform(string $product, string $version): PackageRef
+    {
+        return new PackageRef(PackageUrl::fromPackageName('generic', $product), $version);
     }
 
     /**

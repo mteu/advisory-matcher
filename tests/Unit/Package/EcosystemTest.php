@@ -34,6 +34,7 @@ final class EcosystemTest extends TestCase
     {
         self::assertSame('npm', Ecosystem::Npm->getDisplayName());
         self::assertSame('PHP', Ecosystem::Php->getDisplayName());
+        self::assertSame('Platform', Ecosystem::Platform->getDisplayName());
     }
 
     #[Test]

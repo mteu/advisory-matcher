@@ -241,6 +241,14 @@ final class AdvisoryMatcherTest extends TestCase
     }
 
     #[Test]
+    public function aDistributionPatchedPlatformComponentIsStillAnsweredByTheFallback(): void
+    {
+        $advisory = AdvisoryBuilder::build(ecosystem: Ecosystem::Platform, affectedVersions: '>=2.4.0, <2.4.63');
+
+        self::assertSame(MatchResult::Affected, $this->matcher->match($advisory, '2.4.62-1~deb12u2'));
+    }
+
+    #[Test]
     #[DataProvider('fixedVersionProvider')]
     public function namesTheFixOnTheBranchTheInstallIsOn(
         string $affectedVersions,

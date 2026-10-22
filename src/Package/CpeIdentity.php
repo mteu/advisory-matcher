@@ -39,6 +39,7 @@ final readonly class CpeIdentity
     {
         return match ($package->ecosystem()) {
             Ecosystem::Php => self::application('php', 'php'),
+            Ecosystem::Platform => PlatformProduct::from($package->name)->cpeIdentity(),
             Ecosystem::Composer, Ecosystem::Npm, Ecosystem::Unknown => null,
         };
     }

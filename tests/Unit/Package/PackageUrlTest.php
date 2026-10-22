@@ -117,6 +117,11 @@ final class PackageUrlTest extends TestCase
         yield 'a Composer package' => ['pkg:composer/symfony/console', Ecosystem::Composer];
         yield 'an npm package' => ['pkg:npm/lodash', Ecosystem::Npm];
         yield 'the PHP runtime' => ['pkg:generic/php', Ecosystem::Php];
+        yield 'a web server' => ['pkg:generic/httpd', Ecosystem::Platform];
+        yield 'a database server' => ['pkg:generic/mariadb', Ecosystem::Platform];
+        yield 'a platform product NVD cannot be asked about' => ['pkg:generic/nginx', Ecosystem::Platform];
+        yield 'a platform product in a namespace' => ['pkg:generic/acme/nginx', Ecosystem::Unknown];
+        yield 'a platform product as a distribution package' => ['pkg:deb/debian/nginx', Ecosystem::Unknown];
         yield 'another generic package' => ['pkg:generic/openssl', Ecosystem::Unknown];
         yield 'a generic package named php in a namespace' => ['pkg:generic/acme/php', Ecosystem::Unknown];
         yield 'the runtime under a type the specification does not register' => ['pkg:php/php', Ecosystem::Unknown];

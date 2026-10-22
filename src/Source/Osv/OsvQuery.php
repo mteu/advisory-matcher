@@ -44,7 +44,7 @@ final readonly class OsvQuery
         return match ($ecosystem) {
             Ecosystem::Composer => 'Packagist',
             Ecosystem::Npm => 'npm',
-            Ecosystem::Php, Ecosystem::Unknown => throw new \InvalidArgumentException(
+            Ecosystem::Php, Ecosystem::Platform, Ecosystem::Unknown => throw new \InvalidArgumentException(
                 sprintf('OSV has no ecosystem for "%s".', $ecosystem->value),
             ),
         };
