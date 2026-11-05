@@ -1,0 +1,45 @@
+name: DevGuard DevSecOps
+
+on:
+    push:
+
+permissions:
+    contents: read
+    packages: write
+
+jobs:
+    find-leaked-secrets:
+        uses: l3montree-dev/devguard-ci-components/.github/workflows/secret-scanning.yml@main
+        with:
+            devguard-asset-name: "mteu/projects/typo3-supply-chain-monitoring/assets/advisory-matcher"
+            devguard-api-url: "https://api.devguard.org"
+            devguard-web-ui: "https://app.devguard.org"
+        secrets:
+            devguard-token: "${{ secrets.DEVGUARD_TOKEN }}" # you need to create this secret in your GitHub repository settings
+
+    bad-practice-finder:
+        uses: l3montree-dev/devguard-ci-components/.github/workflows/static-application-security-testing.yml@main
+        with:
+            devguard-asset-name: "mteu/projects/typo3-supply-chain-monitoring/assets/advisory-matcher"
+            devguard-api-url: "https://api.devguard.org"
+            devguard-web-ui: "https://app.devguard.org"
+        secrets:
+            devguard-token: "${{ secrets.DEVGUARD_TOKEN }}" # you need to create this secret in your GitHub repository settings
+
+    infrastructure-as-code-scanning:
+        uses: l3montree-dev/devguard-ci-components/.github/workflows/iac.yml@main
+        with:
+            devguard-asset-name: "mteu/projects/typo3-supply-chain-monitoring/assets/advisory-matcher"
+            devguard-api-url: "https://api.devguard.org"
+            devguard-web-ui: "https://app.devguard.org"
+        secrets:
+            devguard-token: "${{ secrets.DEVGUARD_TOKEN }}" # you need to create this secret in your GitHub repository settings
+
+    dependency-scanning:
+        uses: l3montree-dev/devguard-ci-components/.github/workflows/software-composition-analysis.yml@main
+        with:
+            devguard-asset-name: "mteu/projects/typo3-supply-chain-monitoring/assets/advisory-matcher"
+            devguard-api-url: "https://api.devguard.org"
+            devguard-web-ui: "https://app.devguard.org"
+        secrets:
+            devguard-token: "${{ secrets.DEVGUARD_TOKEN }}" # you need to create this secret in your GitHub repository settings 
