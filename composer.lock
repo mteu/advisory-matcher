@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a930e4c7fd0a391b01b7d6bd17073548",
+    "content-hash": "674eb12f122eb52d0dd061db43c08343",
     "packages": [
         {
             "name": "composer/semver",
@@ -86,28 +86,31 @@
         },
         {
             "name": "package-url/packageurl-php",
-            "version": "1.1.2",
+            "version": "2.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/package-url/packageurl-php.git",
-                "reference": "32058ad61f0d8b457fa26e7860bbd8b903196d3f"
+                "reference": "1485234b387e8e19cb83fa68dfc7f99910aa6231"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/package-url/packageurl-php/zipball/32058ad61f0d8b457fa26e7860bbd8b903196d3f",
-                "reference": "32058ad61f0d8b457fa26e7860bbd8b903196d3f",
+                "url": "https://api.github.com/repos/package-url/packageurl-php/zipball/1485234b387e8e19cb83fa68dfc7f99910aa6231",
+                "reference": "1485234b387e8e19cb83fa68dfc7f99910aa6231",
                 "shasum": ""
             },
             "require": {
-                "php": "^7.3 || ^8.0"
+                "php": "^8.3"
             },
             "require-dev": {
                 "ext-json": "*",
-                "phpunit/phpunit": "9.6.16",
+                "phpunit/phpunit": "12.5.45",
                 "roave/security-advisories": "dev-latest"
             },
             "type": "library",
             "extra": {
+                "branch-alias": {
+                    "dev-main": "2.x-dev"
+                },
                 "composer-normalize": {
                     "indent-size": 4,
                     "indent-style": "space"
@@ -140,7 +143,7 @@
             ],
             "support": {
                 "issues": "https://github.com/package-url/packageurl-php/issues",
-                "source": "https://github.com/package-url/packageurl-php/tree/1.1.2"
+                "source": "https://github.com/package-url/packageurl-php/tree/2.1.0"
             },
             "funding": [
                 {
@@ -148,8 +151,8 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-02-05T11:20:07+00:00",
-            "published-time": "2024-02-05T11:21:28+00:00"
+            "time": "2026-11-25T11:15:21+00:00",
+            "published-time": "2026-11-25T11:20:09+00:00"
         },
         {
             "name": "psr/clock",
